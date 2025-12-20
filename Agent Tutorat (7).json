@@ -1,0 +1,843 @@
+{
+  "name": "Agent Tutorat",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are \"The Student Guide\", an expert AI assistant specialized in Université Ephrata and UJLoG academic information.\n\nYour mission is to provide PRECISE, ACCURATE, and COMPLETE answers about academic programs, courses, and university regulations.\n\n====================\n🎯 CORE PRINCIPLES (MANDATORY)\n====================\n\n1. SEARCH PRECISION:\n   - ALWAYS extract ALL relevant keywords from the user question\n   - For program questions: use exact program name + level (L1/L2/L3/M1/M2)\n   - For course questions: use UE codes, course names, AND program context\n   - For regulation questions: use specific terms (LMD, credits, validation, etc.)\n   - Search MULTIPLE times if the question has multiple aspects\n\n2. ANSWER ACCURACY:\n   - Use ONLY information from retrieved documents\n   - NEVER invent, assume, or extrapolate information\n   - If information is incomplete, state EXACTLY what is missing\n   - Cite document types when relevant (\"According to the [DOCX/PDF] documentation...\")\n\n3. COMPLETENESS:\n   - For UE lists: provide ALL courses with their codes, credits, and descriptions\n   - For programs: include structure, total credits, and key requirements\n   - For regulations: explain the rule AND its practical implications\n\n====================\n📚 DOCUMENT INTELLIGENCE\n====================\n\nDOCX Documents (Program Tables):\n- Contain: Complete program structures, UE lists, credit distributions\n- Use for: Filière content, course lists, semester breakdowns\n- Priority: HIGH for \"what courses\", \"UE list\", \"program structure\" questions\n\nPDF Documents (Regulations):\n- Contain: LMD methodology, validation rules, institutional policies\n- Use for: System explanations, rules, procedures, requirements\n- Priority: HIGH for \"how does\", \"what are the rules\", \"LMD system\" questions\n\nMetadata Usage:\n- Check type_document field in retrieved chunks\n- Prioritize DOCX for factual data (courses, credits)\n- Prioritize PDF for conceptual explanations (rules, methodology)\n\n====================\n🔍 ADVANCED SEARCH STRATEGY\n====================\n\n**Step 1: Query Analysis**\n- Identify: Program name, level, specific UE, topic, regulation\n- Extract: ALL keywords, synonyms, and related terms\n- Example: \"UE L3 histoire géographie\" → search: \"L3 histoire géographie UE cours semestre\"\n\n**Step 2: Intelligent Search**\n- Use the knowledge base tool with comprehensive search terms\n- Include variations: \"filière\" + program name, \"niveau\" + level, etc.\n- For follow-ups: combine current question with conversation context\n\n**Step 3: Result Validation**\n- Review retrieved documents for relevance\n- Check if information is complete or partial\n- Identify gaps and state them explicitly\n\n**Step 4: Synthesis**\n- Organize information logically (by semester, by type, etc.)\n- Preserve table structures from source documents\n- Add context to help student understanding\n\n====================\n💬 ANSWER FORMATTING\n====================\n\n**For UE Lists:**\n```\nVoici les UE du niveau [X] en [Programme]:\n\n**Semestre [N]:**\n- [Code UE]: [Nom complet] ([X] crédits)\n  Description: [si disponible]\n\n**Semestre [N+1]:**\n...\n\n**Total:** [X] crédits sur [Y] semestres\n```\n\n**For Program Structure:**\n- Overview first (total credits, duration, objectives)\n- Semester-by-semester breakdown\n- Key requirements or specializations\n\n**For Regulations:**\n- Clear explanation of the rule\n- Practical implications for students\n- Examples when helpful\n\n**For Incomplete Information:**\n\"Based on the available documentation:\n[Provide what you found]\n\nℹ️ Information manquante: [Specify what is missing]\nJe te recommande de contacter [relevant office] pour ces détails.\"\n\n====================\n🧠 CONVERSATION INTELLIGENCE\n====================\n\n- Remember previous questions and answers\n- For follow-ups: \"tu as mentionné [X], voici plus de détails...\"\n- Build on context: if user asked about L2, assume follow-up about same program\n- Clarify ambiguities: \"Tu parles de [Program A] ou [Program B]?\"\n\n====================\n⚠️ QUALITY CONTROLS\n====================\n\n**Before answering, verify:**\n✓ Did I search with ALL relevant keywords?\n✓ Is the information from the correct document type?\n✓ Did I include ALL courses/details requested?\n✓ Are credits, codes, and names accurate?\n✓ Did I state limitations if information is incomplete?\n\n**Never:**\n✗ Provide partial lists without stating they are incomplete\n✗ Mix information from different programs/levels\n✗ Invent course codes, credits, or requirements\n✗ Give vague answers when specific data exists\n\n====================\n🎓 TONE & STYLE\n====================\n\n- Professional yet friendly (\"tu\" form)\n- Patient and pedagogical\n- Clear structure (bullets, numbering, sections)\n- Encourage follow-up questions\n- Empathetic to student concerns\n\n====================\n🛑 STOP CONDITIONS\n====================\n\n- Provide ONE complete, well-structured answer\n- Only ask clarifying questions if genuinely ambiguous\n- End with: \"N'hésite pas si tu as d'autres questions !\"",
+          "maxIterations": 2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -3880,
+        416
+      ],
+      "id": "28d7cf6a-9d82-4f01-bd7f-818c9f85f2c8",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4160,
+        1352
+      ],
+      "id": "3f032bfe-5479-42ab-8bb7-121b9777fee9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -2112,
+        848
+      ],
+      "id": "ecf21261-cdb3-4fc2-862d-5e3f496a3fbd",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "hbXH9N5Osh16opjk",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -2016,
+        1072
+      ],
+      "id": "9e1a202b-cbe5-4d0d-95d0-7b671fcbb008",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search the university knowledge base to find precise information about: academic programs (filières) with their courses, individual courses (UE) with credits and descriptions, semester structures, LMD system rules, and university regulations. Always search with specific terms like program names, course codes, or exact topics.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 15,
+        "useReranker": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -3680,
+        640
+      ],
+      "id": "fdac78ce-34b5-45cc-9931-65a2b5bed1f3",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "hbXH9N5Osh16opjk",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -3936,
+        640
+      ],
+      "id": "d060c14c-87f9-4a35-b691-83e9b250b557",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "5SKJvsdAcPMEo8RF",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1JDPv4jCzMXaIdbsAcGzEMHd6M5q_4Run",
+            "mode": "list",
+            "cachedResultName": "Tuteur Conseil",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1JDPv4jCzMXaIdbsAcGzEMHd6M5q_4Run"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -3936,
+        1352
+      ],
+      "id": "b169ab47-061a-44b6-b9b6-d278d61edb0a",
+      "name": "Recherche des fichiers le drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DsWeIVb15ZFIpAKK",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -3712,
+        1352
+      ],
+      "id": "0a39fc92-c41c-4d88-8b43-12b7711c1b35",
+      "name": "Telecherger les fichiers",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DsWeIVb15ZFIpAKK",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloud.llamaindex.ai/api/v1/parsing/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "openai-gpt-4-1-mini"
+            },
+            {
+              "name": "high_res_ocr",
+              "value": "true"
+            },
+            {
+              "name": "adaptive_long_table",
+              "value": "true"
+            },
+            {
+              "name": "outlined_table_extraction",
+              "value": "true"
+            },
+            {
+              "name": "output_tables_as_HTML",
+              "value": "true"
+            },
+            {
+              "name": "precise_bounding_box",
+              "value": "true"
+            },
+            {
+              "name": "type_document",
+              "value": "=\t{{ $json.type_document }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -3040,
+        1352
+      ],
+      "id": "fc12c787-07da-4701-803c-a0123c744126",
+      "name": "Appel de llama cloud",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "5RMp02JTlqCSUORs",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "SUCCESS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "830e984a-e1d2-4eef-9dbc-abd0fb73d190"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SUCCESS"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ca146053-4456-4d09-a2df-b45aeb5d4d11",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "PENDING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PENDING"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2592,
+        1352
+      ],
+      "id": "caea5495-3a33-4d17-be7f-198ef710de8c",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2816,
+        1352
+      ],
+      "id": "5bfd6741-92ff-416d-96a0-37ad5d639ead",
+      "name": "Wait",
+      "webhookId": "07cf47ed-40db-4712-878d-de039507a1d2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2368,
+        1352
+      ],
+      "id": "c6205753-54a5-4bae-972b-7c948c3f9be3",
+      "name": "Wait1",
+      "webhookId": "49ccbaef-8b23-41f8-9479-5bedd01c5805"
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Salut 👋\nJe suis Toto. Comment puisse t'aider aujourd'hui ?",
+        "options": {
+          "allowFileUploads": true,
+          "showWelcomeScreen": true,
+          "getStarted": "Démarrer une conversation",
+          "subtitle": "Ton guide universitaire disponible 24/7",
+          "title": "Assistant à EPHRATA",
+          "customCss": "/* =========================================================\n   🎨 DESIGN SYSTEM – UNIVERSITÉ EPHRATA (RAG CHAT UI)\n   ========================================================= */\n\n:root {\n  /* =========================\n     🎨 BRAND COLORS (ACADEMIC)\n     ========================= */\n  --chat--color-primary: #1e3a8a; /* Bleu universitaire */\n  --chat--color-primary-shade-50: #1e40af;\n  --chat--color-primary-shade-100: #1d4ed8;\n\n  --chat--color-secondary: #16a34a; /* Vert réussite */\n  --chat--color-secondary-shade-50: #15803d;\n\n  --chat--color-white: #ffffff;\n  --chat--color-light: #f5f7fb;\n  --chat--color-light-shade-50: #e5e9f2;\n  --chat--color-light-shade-100: #cbd5e1;\n\n  --chat--color-dark: #0f172a;\n  --chat--color-muted: #64748b;\n  --chat--color-disabled: #cbd5e1;\n  --chat--color-typing: #475569;\n\n  /* =========================\n     📐 LAYOUT & TYPOGRAPHY\n     ========================= */\n  --chat--spacing: 1rem;\n  --chat--border-radius: 14px;\n  --chat--border-radius-sm: 10px;\n  --chat--transition-duration: 0.2s;\n\n  --chat--font-family: (\n    -apple-system,\n    BlinkMacSystemFont,\n    \"Inter\",\n    \"Segoe UI\",\n    Roboto,\n    sans-serif\n  );\n\n  /* =========================\n     🪟 CHAT WINDOW\n     ========================= */\n  --chat--window--width: 420px;\n  --chat--window--height: 640px;\n  --chat--window--bottom: 1.25rem;\n  --chat--window--right: 1.25rem;\n  --chat--window--z-index: 9999;\n  --chat--window--border: none;\n  --chat--window--border-radius: 18px;\n  --chat--window--margin-bottom: var(--chat--spacing);\n  --chat--window--shadow: 0 20px 40px rgba(15, 23, 42, 0.18);\n\n  /* =========================\n     🧠 HEADER (INSTITUTIONAL)\n     ========================= */\n  --chat--header--padding: 1.2rem 1.4rem;\n  --chat--header--background: linear-gradient(\n    135deg,\n    #1e3a8a,\n    #1d4ed8\n  );\n  --chat--header--color: #ffffff;\n\n  --chat--heading--font-size: 1.2rem;\n  --chat--heading--font-weight: 600;\n\n  --chat--subtitle--font-size: 0.85rem;\n  --chat--subtitle--line-height: 1.4;\n  --chat--subtitle--color: #e0e7ff;\n\n  /* =========================\n     💬 MESSAGES\n     ========================= */\n  --chat--message--font-size: 0.95rem;\n  --chat--message--line-height: 1.6;\n  --chat--message--padding: 0.9rem 1.1rem;\n  --chat--message--border-radius: 14px;\n  --chat--message--margin-bottom: 0.75rem;\n\n  /* BOT MESSAGE */\n  --chat--message--bot--background: #ffffff;\n  --chat--message--bot--color: var(--chat--color-dark);\n  --chat--message--bot--border: 1px solid var(--chat--color-light-shade-50);\n\n  /* USER MESSAGE */\n  --chat--message--user--background: var(--chat--color-secondary);\n  --chat--message--user--color: #ffffff;\n\n  /* Code / tables */\n  --chat--message--pre--background: #f1f5f9;\n\n  --chat--messages-list--padding: 1rem 1.2rem;\n\n  /* =========================\n     ✏️ INPUT AREA\n     ========================= */\n  --chat--textarea--height: 52px;\n  --chat--textarea--max-height: 28rem;\n\n  --chat--input--font-size: 0.95rem;\n  --chat--input--padding: 0.85rem 1rem;\n  --chat--input--background: #ffffff;\n  --chat--input--border: 1px solid var(--chat--color-light-shade-50);\n  --chat--input--border-radius: 12px;\n  --chat--input--text-color: var(--chat--color-dark);\n  --chat--input--line-height: 1.5;\n\n  /* =========================\n     🚀 BUTTONS\n     ========================= */\n  --chat--button--background: var(--chat--color-primary);\n  --chat--button--color: #ffffff;\n  --chat--button--padding: 0.55rem 1rem;\n  --chat--button--border-radius: 10px;\n  --chat--button--hover--background: var(--chat--color-primary-shade-50);\n\n  /* Send button */\n  --chat--input--send--button--background: transparent;\n  --chat--input--send--button--color: var(--chat--color-primary);\n  --chat--input--send--button--color-hover: var(--chat--color-primary-shade-100);\n\n  /* =========================\n     🧷 TOGGLE (CHAT BUBBLE)\n     ========================= */\n  --chat--toggle--size: 60px;\n  --chat--toggle--border-radius: 50%;\n  --chat--toggle--background: linear-gradient(\n    135deg,\n    #1e3a8a,\n    #1d4ed8\n  );\n  --chat--toggle--hover--background: #1e40af;\n  --chat--toggle--color: #ffffff;\n\n  /* =========================\n     🧾 FOOTER\n     ========================= */\n  --chat--footer--background: var(--chat--color-light);\n  --chat--footer--color: var(--chat--color-muted);\n}\n\n/* =========================================================\n   🎓 HEADER AVATAR – GUIDE ÉTUDIANT\n   ========================================================= */\n\n.chat-header {\n  position: relative;\n  padding-top: 3.6rem !important;\n  text-align: center;\n}\n\n/* Avatar homme avec chapeau 🎓 */\n.chat-header::before {\n  content: \"👨‍🎓\";\n  position: absolute;\n  top: 0.7rem;\n  left: 50%;\n  transform: translateX(-50%);\n  width: 64px;\n  height: 64px;\n  border-radius: 50%;\n  background: #ffffff;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 2.6rem;\n  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);\n  border: 3px solid #e0e7ff;\n  z-index: 2;\n}\n\n/* =========================================================\n   💡 UX IMPROVEMENTS\n   ========================================================= */\n\n/* Messages plus larges (idéaux pour UE & filières) */\n.chat-message {\n  max-width: 78%;\n}\n\n/* Style bulles */\n.chat-message.bot {\n  border-radius: 14px 14px 14px 4px;\n}\n\n.chat-message.user {\n  border-radius: 14px 14px 4px 14px;\n}\n\n/* Transitions douces */\n.chat-message,\n.chat-window,\n.chat-toggle {\n  transition: all 0.2s ease;\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -4160,
+        416
+      ],
+      "id": "053ab88f-8ee7-4544-9fb7-063fc12aa94a",
+      "name": "When chat message received",
+      "webhookId": "56f1a6ce-76ee-4b12-ad1b-e2512269b3e1"
+    },
+    {
+      "parameters": {
+        "chunkSize": 600,
+        "chunkOverlap": 150,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -1936,
+        1280
+      ],
+      "id": "cd61546f-5e42-48b3-8ac8-9dd3cecf97e1",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.name }}",
+                    "rightValue": ".pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "endsWith"
+                    },
+                    "id": "6d418de0-a320-4146-b990-27b6ff01309c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d8122da8-cd22-44b4-aa7a-ac1e79277d0e",
+                    "leftValue": "={{ $json.name }}",
+                    "rightValue": ".docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "endsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "docx"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -3488,
+        1352
+      ],
+      "id": "66b76ca2-13e6-471d-a809-cd8e202951c5",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4804cbfb-b881-415b-a955-b9d01d5f9616",
+              "name": "type_document",
+              "value": "PDF",
+              "type": "string"
+            },
+            {
+              "id": "09ee2252-046b-47e0-ab54-8f75193e5950",
+              "name": "type_document",
+              "value": "DOCX",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3264,
+        1352
+      ],
+      "id": "0a002389-200e-4c93-a31b-07aaba17ef81",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelName": "BAAI/bge-m3",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        -2144,
+        1072
+      ],
+      "id": "67600d7c-4b11-43b3-a563-6d44279433d6",
+      "name": "Embeddings HuggingFace Inference",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "Jp7K43UABafAk3fH",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "BAAI/bge-m3",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        -3664,
+        848
+      ],
+      "id": "e74fc42b-33f0-410e-999e-0a3c43229ab5",
+      "name": "Embeddings HuggingFace Inference1",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "Jp7K43UABafAk3fH",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloud.llamaindex.ai/api/v1/parsing/job/{{ $('Appel de llama cloud').item.json.id }}/details",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2008,
+        1456
+      ],
+      "id": "4c680e93-ef4f-4f00-a41b-0e7b9d24d4f8",
+      "name": "Obetenir les details du jobs chez llama cloud",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "5RMp02JTlqCSUORs",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloud.llamaindex.ai/api/v1/parsing/job/{{ $json.id }}/result/markdown",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2368,
+        1056
+      ],
+      "id": "845d25ea-faee-4778-840d-059a2a64d690",
+      "name": "Recevoir le markdown reussi",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "5RMp02JTlqCSUORs",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "topN": 5
+      },
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        -3536,
+        848
+      ],
+      "id": "cd79159c-1c64-4a13-890d-0585e2a67cfd",
+      "name": "Reranker Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "DHqHGSh43kt2hhwX",
+          "name": "CohereApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 8
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -3808,
+        640
+      ],
+      "id": "1f150483-3d63-4f70-8bc4-c1d706ef2b53",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "X7dhVSodZmhsVyz9",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Recherche des fichiers le drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recherche des fichiers le drive": {
+      "main": [
+        [
+          {
+            "node": "Telecherger les fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telecherger les fichiers": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel de llama cloud": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Recevoir le markdown reussi",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Obetenir les details du jobs chez llama cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Appel de llama cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings HuggingFace Inference": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings HuggingFace Inference1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obetenir les details du jobs chez llama cloud": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recevoir le markdown reussi": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_reranker",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a526ed5d-bf0d-4a8a-a1aa-5d0ab801cd67",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1032ec414d2c5aac153f47d5c452dc710929f0e1aeb5fca447261afc78be4d9f"
+  },
+  "id": "2oyGSHWcQxqhpPDH",
+  "tags": []
+}
