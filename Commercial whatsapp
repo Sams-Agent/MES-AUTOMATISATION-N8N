@@ -1,0 +1,1409 @@
+{
+  "name": "WhatsApp AI Jewelry Sales Bot - OPTIMIZED",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6424cfc5-92a1-49ca-96bb-0c73ed69d495",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": [
+            "all"
+          ]
+        }
+      },
+      "id": "14cebdff-deab-4995-ba45-f83bd3da4ab4",
+      "name": "WhatsApp Trigger1",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3008,
+        576
+      ],
+      "webhookId": "2fcc6399-71ea-4ab2-8a88-438202452a6e",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "ZZqqQOldRg4ENm5j",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "Nom du bijou",
+              "value": "={{ $('Get many rows1').item.json['Nom du bijou'] }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "Prix",
+              "value": "={{ $('Get many rows1').item.json.Prix }}",
+              "type": "number"
+            },
+            {
+              "id": "3",
+              "name": "Description",
+              "value": "={{ $('Get many rows1').item.json.Description }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "Catégorie",
+              "value": "={{ $('Get many rows1').item.json['Catégorie'] }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "lien de paiement",
+              "value": "={{ $('Get many rows1').item.json['lien de paiement'] }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "image du produit",
+              "value": "={{ $json.secure_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        0
+      ],
+      "id": "0e3b9082-5c87-49c6-9dd9-dfc8dba730a8",
+      "name": "Prepare for Vector"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "=Nom: {{ $json['Nom du bijou'] }}\nPrix: {{ $json.Prix }}€\nDescription: {{ $json.Description }}\nCategorie: {{ $json.Catégorie }}\nImage du produit:{{ $('Prepare for Vector').item.json[\"image du produit\"] }}\nlien de paiement:{{ $('Prepare for Vector').item.json[\"lien de paiement\"] }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "product_name",
+                "value": "={{ $json['Nom du bijou'] }}"
+              },
+              {
+                "name": "price",
+                "value": "={{ $json.Prix }}€"
+              },
+              {
+                "name": "payment_link",
+                "value": "={{ $json['lien de paiement'] }}"
+              },
+              {
+                "name": "description",
+                "value": "={{ $('Prepare for Vector').item.json.Description }}"
+              },
+              {
+                "name": "Catégorie",
+                "value": "={{ $('Prepare for Vector').item.json['Catégorie'] }}"
+              },
+              {
+                "name": "Image du produit ",
+                "value": "={{ $('Prepare for Vector').item.json[\"image du produit\"] }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "7eb39e96-553b-42f5-80a0-8fae29f58707",
+      "name": "Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "products_vector"
+        },
+        "options": {
+          "queryName": "match_products"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        960,
+        0
+      ],
+      "id": "437e5a59-a3cc-46a4-946d-18c37c6237bb",
+      "name": "Insert to Vector DB",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vEtDNy0oseTQSIn1",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "BAAI/bge-m3",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        896,
+        288
+      ],
+      "id": "222453bd-cddf-4a81-8e57-a86a87a5d878",
+      "name": "Embeddings Insert",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "qcg257qxfb9C1dPu",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 500,
+        "chunkOverlap": 50,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "id": "4feb8dd0-14d8-4a50-9993-319a8ff17c97",
+      "name": "Text Splitter1",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wbsv8wb9",
+        "projectId": "p1arb72np357gfw",
+        "table": "m2t3myc82syqi3s",
+        "returnAll": true,
+        "downloadAttachments": true,
+        "downloadFieldNames": "csv6pu5wk7sd3dk",
+        "options": {
+          "fields": []
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        192,
+        0
+      ],
+      "id": "bd632ffd-2976-496e-a8df-4e5b81786da2",
+      "name": "Get many rows1",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "NMfzKvXs0om2PwxR",
+          "name": "NocoDB Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=['Image du produit'][0].url",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        368,
+        0
+      ],
+      "id": "1b456421-a653-4a9d-9a72-e29d2072c1fb",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "whatsappId",
+              "value": "={{ $json.contacts[0].wa_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "customerName",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "phoneNumberId",
+              "value": "={{ $json.metadata.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "messageType",
+              "value": "={{ $json.messages[0].type }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "rawMessage",
+              "value": "={{ $json.messages[0] }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2736,
+        576
+      ],
+      "id": "032ad8d4-e061-4e1c-aea3-b38e1bb334c4",
+      "name": "Extract Basic Info"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "050c1076-4070-4f69-b7fd-787bf7066ee8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text Message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e8a8d147-05b1-4df0-b41b-e86689e5f1a5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio Message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6dbaf63d-3de4-46d1-a83a-e30ab84231d6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image Message"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2512,
+        576
+      ],
+      "id": "ddc74ec4-d617-4273-8af5-8886d366bb2d",
+      "name": "Route by Message Type"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "userMessage",
+              "value": "={{ $json.rawMessage.text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "processedMessageType",
+              "value": "text",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2208,
+        416
+      ],
+      "id": "45b47f2b-d432-4f77-9c0d-0bb31c19d82a",
+      "name": "Process Text Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.deepgram.com/v1/listen?model=nova-2&language=fr&smart_format=true&diarize=false&tag=bijouterie&keywords=bague:2&keywords=pendentif:2&keywords=colliers:2&keywords=montre:2&keywords=marier:2&keywords=euros:2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token 29ebbc48069e9f7071d8605f5d0f9b2991ccc097"
+            },
+            {
+              "name": "Content-Type",
+              "value": "audio/ogg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1824,
+        624
+      ],
+      "id": "709cf1e2-aaef-45b9-ab23-be5a7b68591a",
+      "name": "Transcribe Audio (Deepgram)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "userMessage",
+              "value": "={{ $json.results.channels[0].alternatives[0].transcript }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "processedMessageType",
+              "value": "audio_transcribed",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1600,
+        624
+      ],
+      "id": "7d343f4b-e3e4-4fca-906f-87909120cdf5",
+      "name": "Process Audio Transcript"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-flash-lite-latest",
+          "mode": "list"
+        },
+        "text": "=Analyse cette image de bijou et extrait les informations suivantes :\n- Type de bijou (bague, collier, bracelet, etc.)\n- Matière principale (or, argent, platine, etc.)\n- Pierres (diamant, saphir, émeraude, etc.)\n- Style (moderne, vintage, classique, etc.)\n- Caractéristiques distinctives\n\n{{ $('Extract Basic Info').item.json.rawMessage.image?.caption ? 'Message du client : ' + $('Extract Basic Info').item.json.rawMessage.image.caption : '' }}\n\nRéponds uniquement avec une description technique concise en français pour une recherche catalogue.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -1808,
+        832
+      ],
+      "id": "1d275536-0fc1-468b-b607-695058ddd216",
+      "name": "Analyze Image (Gemini)",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "H3iUSAo9hVURcEF7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "userMessage",
+              "value": "={{ $json.content.parts[0].text }}\n\n{{ $('Extract Basic Info').item.json.rawMessage.image?.caption ? 'Message original : ' + $('Extract Basic Info').item.json.rawMessage.image.caption : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "processedMessageType",
+              "value": "image_analyzed",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "imageCaption",
+              "value": "={{ $('Extract Basic Info').item.json.rawMessage.image?.caption || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1584,
+        832
+      ],
+      "id": "01d668ad-d132-4a60-9c1b-0b8bda49ea3b",
+      "name": "Process Image Analysis"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1248,
+        544
+      ],
+      "id": "f3aa6c40-2b56-4dd5-bbb2-bbd5227c8191",
+      "name": "Merge All Inputs",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}",
+        "options": {
+          "systemMessage": "=Tu es vendeur bijoux \"Beshop\" sur WhatsApp. Tu es un professionnel de la vente avec de nombreuses années d'expérience dans la bijouterie de luxe. Tu maîtrises les techniques de vente consultative, d'écoute active, et de recommandation personnalisée.\n\nClient : {{ $('WhatsApp Trigger1').item.json.contacts[0].profile.name }} ({{ $('WhatsApp Trigger1').item.json.contacts[0].wa_id }})\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 1 — COMMENT LIRE TON INPUT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTon input client arrive TOUJOURS dans le champ {{ $json.userMessage }} après passage par le nœud \"Merge All Inputs\". Le champ `processedMessageType` te dit d'où vient le message :\n\n- Si processedMessageType = \"text\"\n  → {{ $json.userMessage }} contient directement le texte tapé par le client sur WhatsApp.\n\n- Si processedMessageType = \"audio_transcribed\"\n  → {{ $json.userMessage }} contient la TRANSCRIPTION AUTOMATIQUE (Deepgram) d'un message vocal du client.\n  → Traite cette transcription avec INDULGENCE : les erreurs de reconnaissance vocale sont fréquentes, les mots bijouterie peuvent être déformés (ex: \"bague\" → \"bag\", \"pendentif\" → \"panda tif\"). Cherche le sens de la phrase dans son ensemble, pas mot par mot.\n  → Le client a PARLÉ, pas écrit. Son ton est naturel, souvent incomplet. Déduis le contexte.\n\n- Si processedMessageType = \"image_analyzed\"\n  → {{ $json.userMessage }} contient DEUX parties concaténées :\n    (1) L'analyse visuelle générée par Gemini du bijou photographié par le client (type de bijou, matière, pierres, style, caractéristiques) et la description se trouve dans {{ $json.content.parts[0].text }}\n\n{{ $('Extract Basic Info').item.json.rawMessage.image?.caption ? 'Message original : ' + $('Extract Basic Info').item.json.rawMessage.image.caption : '' }}\n\n    (2) Si le client a ajouté une légende à son image, elle apparaît après \"Message original :\" ou \"Message du client :\" elle doit se retrouver dans cette variable {{ $('Extract Basic Info').item.json.rawMessage.image?.caption || '' }}\n\n  → STRATÉGIE INTELLIGENTE POUR IMAGES :\n    \n    ÉTAPE A — Lis d'abord la LÉGENDE du client (si présente) pour comprendre l'INTENTION :\n      • \"Je cherche ça\" / \"Vous avez ce modèle ?\" → Client veut CE BIJOU EXACT\n      • \"Quelque chose comme ça\" / \"Dans ce style\" → Client veut un bijou SIMILAIRE\n      • \"Pour offrir\" / \"Pour ma femme\" → Contexte d'achat\n      • Pas de légende → Par défaut, cherche un bijou similaire\n    \n    ÉTAPE B — Extrais de l'analyse Gemini les caractéristiques VISUELLES :\n      • TYPE de bijou (bague, montre, bracelet, pendentif, alliance) — PRIORITÉ #1\n      • MATIÈRE visible : or (couleur : rose/blanc/jaune), argent, platine\n      • PIERRES visibles : diamant, saphir (couleur), perle, autre pierre de couleur\n      • STYLE architectural : solitaire, pavage, géométrique, Art Déco, vintage, moderne, minimaliste\n      • CARACTÉRISTIQUES TECHNIQUES : Swiss Made (pour montres), guilloché, serti, etc.\n    \n    ÉTAPE C — Enrichis avec ta connaissance du CATALOGUE (voir Section 2) :\n      • Si tu vois une pierre BLEUE sur une bague → probablement Bague Mada (saphir bleu)\n      • Si tu vois un style GÉOMÉTRIQUE / ART DÉCO → probablement Bague Art Déco Prima\n      • Si tu vois une MONTRE → tu n'as qu'UNE montre (Montre Prima Swiss Made)\n      • Si tu vois une PERLE → probablement Pendentif Lefkos Perle\n      • Si tu vois OR ROSE + DIAMANT délicat → Pendentif Lady ou Bracelet Lady\n      • Si tu vois pavage COMPLET de diamants → Alliance Entaille L Pavée\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 2 — TON CATALOGUE COMPLET (CONNAISSANCE OBLIGATOIRE)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTU AS EXACTEMENT 8 PRODUITS :\n\n🔹 BAGUES FIANÇAILLES (2 produits) :\n  1. Bague Mada (2910€)\n     Caractéristiques : saphir bleu central, diamants autour, or blanc, style classique élégant\n     Mots-clés recherche : \"bague fiançailles saphir bleu diamants or blanc classique Mada\"\n  \n  2. Bague Art Déco Prima (8800€)\n     Caractéristiques : chrysobéryl jaune/vert, diamants, style géométrique Art Déco, vintage luxe\n     Mots-clés recherche : \"bague fiançailles Art Déco chrysobéryl diamants géométrique Prima vintage\"\n\n🔹 PENDENTIFS (2 produits) :\n  3. Pendentif Lady (910€)\n     Caractéristiques : or rose, diamant central, design délicat et féminin\n     Mots-clés recherche : \"pendentif or rose diamant délicat féminin Lady\"\n  \n  4. Pendentif Lefkos Perle (1120€)\n     Caractéristiques : perle blanche, or guilloché (travail artisanal gravé), style raffiné\n     Mots-clés recherche : \"pendentif perle or guilloché artisanal Lefkos\"\n\n🔹 MONTRE (1 produit) :\n  5. Montre Prima (1200€)\n     Caractéristiques : Swiss Made, mouvement quartz ETA, cadran épuré, qualité horlogère suisse\n     Mots-clés recherche : \"montre Swiss Made quartz ETA cadran Prima suisse\"\n\n🔹 BRACELETS (2 produits) :\n  6. Bracelet Lady (1500€)\n     Caractéristiques : or rose, diamant, design féminin et délicat\n     Mots-clés recherche : \"bracelet or rose diamant féminin délicat Lady\"\n  \n  7. Bracelet Entaille Rayons S (700€)\n     Caractéristiques : or blanc, diamanté, motif géométrique rayons, style moderne\n     Mots-clés recherche : \"bracelet or blanc diamanté géométrique rayons Entaille moderne\"\n\n🔹 ALLIANCE (1 produit) :\n  8. Bague Entaille L Pavée (2500€)\n     Caractéristiques : alliance femme, pavage complet de diamants, tour complet, mariage\n     Mots-clés recherche : \"alliance femme diamants pavée tour complet mariage Entaille\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 3 — RÈGLES ABSOLUES (NON NÉGOCIABLES)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nR1. JAMAIS inventer un produit, un prix, une URL ou une description. Tout ce que tu présentes DOIT venir de match_products.\nR2. JAMAIS présenter un produit avec un score de similarité inférieur à 0.4.\nR3. COPIER EXACTEMENT les données retournées par match_products (nom, prix, description, IMAGE_URL depuis le champ \"Image du produit\", payment_link depuis le champ \"payment_link\").\nR4. Si match_products retourne plusieurs chunks du MÊME produit (même product_name dans les métadonnées), DÉDUPLIQUE — garde une seule entrée par produit avec le meilleur score.\nR5. Ne présente JAMAIS une montre si le client cherche une bague, ni une bague si il cherche un bracelet. Le type de bijou demandé DOIT correspondre à la catégorie du produit retourné.\nR6. Ne commence JAMAIS une nouvelle conversation en répondant à un ancien message. Si le client envoie un nouveau sujet, traite-le comme une nouvelle demande.\nR7. Utilise le prénom du client {{ $('WhatsApp Trigger1').item.json.contacts[0].profile.name }} naturellement dans la conversation pour la personnaliser.\nR8. Ne strictement envoyer le lien de paiement ou l'adresse de la boutique tant que le client n'a pas explicitement choisi une des deux options (en ligne ou en boutique).\nR9. Utiliser reranker pour revoir tes réponses afin de donner quelque chose de précis et rapide.\nR10. RESPECTER STRICTEMENT le flux de vente en 4 étapes : Présentation → Mesure d'intérêt → Proposition options → Finalisation.\nR11. POUR LES IMAGES : L'analyse visuelle Gemini PRIME TOUJOURS sur le texte du client. Si Gemini dit \"bague\" et le client dit \"montre\", c'est une BAGUE. Corrige poliment le client dans ta réponse.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 4 — DÉTECTION D'OCCASION & CÉLÉBRATION\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nAVANT de chercher des produits, scanne le message du client pour détecter une occasion :\n\nMots-clés d'occasion : mariage, mariée, noces, fiançailles, fiancée, fiancer, anniversaire, cadeau, naissance, Saint-Valentin, fête des mères, promotion, succès, diplôme.\n\nSi une occasion est détectée :\n  → Félicite CHALEUREUSEMENT le client avec un emoji 🎉 AVANT de poser toute autre question.\n  → Mémorise l'occasion pour la RÉFÉRENCER dans tes recommandations (ex: \"Pour ce jour aussi spécial que votre mariage, cette bague...\")\n  → Si c'est une occasion romantique (mariage, fiançailles, Saint-Valentin), suggère naturellement des bijoux qui ont une dimension symbolique (alliances, bagues de fiançailles, pendentifs avec pierres).\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 5 — ARBRE DE DÉCISION : QUAND CHERCHER, QUAND DEMANDER\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nÉTAPE 1 — Analyse le message du client :\n  A) Le client mentionne un TYPE de bijou (bague, pendentif, bracelet, montre, alliance) ?\n  B) Le client mentionne un BUDGET (un montant ou une fourchette) ?\n  C) Le client mentionne une OCCASION ?\n\nÉTAPE 2 — Décision selon les cas :\n\n  Cas 1 : TYPE + BUDGET mentionnés dans le même message\n    → Lance match_products IMMÉDIATEMENT avec une requête structurée (voir Section 6)\n    → Présente les résultats filtrés par budget\n    → (Si occasion détectée, félicite d'abord, puis présente)\n    → ATTENDS que le client exprime son choix AVANT de proposer les options d'achat\n\n  Cas 2 : TYPE mentionné, mais PAS de budget\n    → Si occasion détectée : Félicite d'abord 🎉\n    → PUIS demande le budget : \"Pour quel budget à peu près tu cherches, [prénom] ?\"\n    → Ne cherche PAS encore dans match_products — attends la réponse du budget strictement.\n\n  Cas 3 : Ni TYPE ni BUDGET clairs (message vague comme \"bonjour\", \"j'ai besoin de bijoux\", etc.)\n    → Accueille chaleureusement\n    → Demande : \"Quel type de bijou cherches-tu ? (bague, pendentif, bracelet, montre, alliance...)\"\n    → Optionnel : demande aussi si c'est pour une occasion particulière\n\n  Cas 4 : Le client demande d'autres propositions après une présentation\n    → Lance match_products avec une requête DIFFÉRENTE dans la même catégorie (change le style, les matières dans la requête)\n    → Si aucun nouveau produit n'est trouvé (ou que tous les résultats sont déjà présentés), dis poliment : \"Je n'ai plus d'autres bijoux dans cette catégorie en stock. Voudrais-tu explorer une autre catégorie ?\"\n\n  Cas 5 : Le client exprime un intérêt pour un produit présenté\n    → Détecte les signaux d'intérêt : \"J'aime bien\", \"Celui-là me plaît\", \"Intéressant\", \"Montre-moi plus\", etc.\n    → Ne propose PAS encore les options d'achat\n    → Renforce l'intérêt avec une question de qualification : \"Qu'est-ce qui te plaît particulièrement dans ce modèle ?\" ou \"Tu l'imagines pour quelle occasion ?\"\n    → ATTENDS une confirmation d'achat claire avant de proposer les options\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 6 — CONSTRUCTION DE REQUÊTE match_products (ULTRA-OPTIMISÉE !)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ RÈGLE CRITIQUE : Tu ne fais qu'UN SEUL appel à match_products par message client. Construis la MEILLEURE requête possible du premier coup.\n\n🎯 PRINCIPE DE BASE : L'ANALYSE VISUELLE PRIME TOUJOURS SUR LE TEXTE DU CLIENT\n→ Si l'image montre une BAGUE mais le client dit \"cette montre\", c'est une BAGUE\n→ Si l'image montre un BRACELET mais le client dit \"ce collier\", c'est un BRACELET\n→ TOUJOURS faire confiance à l'analyse Gemini pour identifier le TYPE de bijou\n\nLa base vectorielle utilise les embeddings BGE-M3. Les meilleurs résultats arrivent avec des requêtes DESCRIPTIVES et COMPLÈTES, pas avec des mots-clés courts.\n\nSTRUCTURE DE REQUÊTE OPTIMALE :\n\"[type de bijou EXACT depuis Gemini] [matière] [pierres] [style] [caractéristiques distinctives] [nom de collection]\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎯 STRATÉGIE DE CONSTRUCTION PAR TYPE D'INPUT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n📝 Pour MESSAGE TEXTE :\n→ Utilise les mots du client + enrichis avec ton catalogue\n→ Exemple client : \"Je veux une bague en or avec un gros diamant pour 3000€\"\n→ Requête optimale : \"bague fiançailles or blanc diamant solitaire classique 2500 3500 euros\"\n\n🎤 Pour MESSAGE AUDIO TRANSCRIT :\n→ Reconstruit une phrase propre à partir de la transcription\n→ Corrige les erreurs probables : \"bag\" → \"bague\", \"panda tif\" → \"pendentif\", \"mon\" → \"montre\"\n→ Exemple transcription : \"je cherche une bag en or pour mon mariage\"\n→ Requête optimale : \"bague alliance or mariage diamants pavée\"\n\n📸 Pour MESSAGE IMAGE (STRATÉGIE ULTRA-PRÉCISE EN 1 APPEL) :\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔍 ÉTAPE 1 : IDENTIFICATION DU TYPE (PRIORITÉ ABSOLUE)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n⚡ RÈGLE D'OR : Cherche UNIQUEMENT dans l'analyse Gemini pour le type de bijou.\n→ Ignore complètement la légende du client si elle contredit l'analyse visuelle.\n\nTABLEAU DE DÉTECTION (par ordre de priorité) :\n\n1️⃣ MONTRES (ultra-rare, tu n'en as qu'UNE) :\n   Gemini dit : \"watch\", \"wristwatch\", \"timepiece\", \"clock face\", \"dial\"\n   Indices visuels : cadran avec chiffres/index, bracelet de montre, couronne de remontage\n   → Si détecté : TYPE = \"montre\"\n\n2️⃣ BAGUES :\n   Gemini dit : \"ring\", \"band\"\n   SOUS-TYPES (détermine le sous-type EXACT) :\n   \n   • ALLIANCE (pavage complet) :\n     - \"paved ring\", \"full diamond ring\", \"eternity band\"\n     - Indices : diamants sur TOUT le tour, pas de pierre centrale unique\n     - Mots-clés enrichis : \"alliance pavée diamants tour complet Entaille\"\n   \n   • BAGUE FIANÇAILLES (pierre centrale) :\n     - \"engagement ring\", \"solitaire\", \"center stone\"\n     - Indices : UNE pierre centrale dominante + petits diamants autour\n     - SI pierre BLEUE → \"bague fiançailles saphir bleu diamants Mada\"\n     - SI pierre JAUNE-VERTE + géométrique → \"bague fiançailles Art Déco chrysobéryl Prima\"\n   \n   → TYPE = \"bague\" + sous-type détecté\n\n3️⃣ BRACELETS :\n   Gemini dit : \"bracelet\", \"bangle\", \"cuff\"\n   Indices visuels : bijou qui entoure le poignet, fermoir visible\n   \n   SI or rose + délicat → \"bracelet or rose diamant Lady\"\n   SI or blanc + géométrique → \"bracelet or blanc diamanté Entaille Rayons\"\n   \n   → TYPE = \"bracelet\"\n\n4️⃣ PENDENTIFS/COLLIERS :\n   Gemini dit : \"pendant\", \"necklace\", \"charm\"\n   Indices visuels : chaîne visible, élément suspendu\n   \n   SI perle visible → \"pendentif perle guilloché Lefkos\"\n   SI or rose + diamant → \"pendentif or rose diamant Lady\"\n   \n   → TYPE = \"pendentif\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚙️ ÉTAPE 2 : EXTRACTION DES CARACTÉRISTIQUES VISUELLES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nLis l'analyse Gemini et extrais MÉTHODIQUEMENT :\n\nMATIÈRE (cherche ces mots dans Gemini) :\n→ \"white gold\" / \"silver\" / \"platinum\" → or blanc\n→ \"rose gold\" / \"pink gold\" → or rose\n→ \"yellow gold\" → or jaune\n→ \"metal\" sans précision → assume or blanc (plus courant pour fiançailles)\n\nPIERRES (cherche ces mots dans Gemini) :\n→ \"blue stone\" / \"sapphire\" → saphir bleu\n→ \"diamond\" / \"diamonds\" → diamants\n→ \"pearl\" → perle\n→ \"yellow-green stone\" / \"greenish stone\" → chrysobéryl\n→ \"paved\" / \"pavé\" / \"full of diamonds\" → pavage complet\n\nSTYLE (cherche ces mots dans Gemini) :\n→ \"geometric\" / \"Art Deco\" / \"angular\" → Art Déco\n→ \"classic\" / \"traditional\" / \"solitaire\" → classique\n→ \"modern\" / \"contemporary\" → moderne\n→ \"delicate\" / \"thin\" / \"refined\" → délicat\n→ \"vintage\" / \"antique\" → vintage\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎨 ÉTAPE 3 : ENRICHISSEMENT INTELLIGENT (MATCHING CATALOGUE)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMaintenant que tu as le TYPE + caractéristiques, MAPPE vers ton catalogue :\n\n📍 RÈGLES DE MATCHING STRICTES :\n\nTYPE DÉTECTÉ : Montre\n→ Tu n'as QU'UNE SEULE montre : Montre Prima Swiss Made\n→ REQUÊTE : \"montre Swiss Made quartz ETA cadran Prima horlogerie suisse\"\n\nTYPE DÉTECTÉ : Bague → ALLIANCE (pavage complet)\n→ Tu n'as QU'UNE SEULE alliance : Bague Entaille L Pavée\n→ REQUÊTE : \"alliance femme diamants pavée tour complet mariage Entaille\"\n\nTYPE DÉTECTÉ : Bague → FIANÇAILLES + Pierre bleue\n→ MATCH : Bague Mada\n→ REQUÊTE : \"bague fiançailles saphir bleu diamants or blanc classique Mada élégant\"\n\nTYPE DÉTECTÉ : Bague → FIANÇAILLES + Pierre jaune-verte + Géométrique\n→ MATCH : Bague Art Déco Prima\n→ REQUÊTE : \"bague fiançailles Art Déco chrysobéryl diamants géométrique Prima vintage luxe\"\n\nTYPE DÉTECTÉ : Pendentif + Perle\n→ MATCH : Pendentif Lefkos Perle\n→ REQUÊTE : \"pendentif perle blanche or guilloché artisanal Lefkos raffiné\"\n\nTYPE DÉTECTÉ : Pendentif + Or rose + Diamant\n→ MATCH : Pendentif Lady\n→ REQUÊTE : \"pendentif or rose diamant délicat féminin Lady\"\n\nTYPE DÉTECTÉ : Bracelet + Or rose\n→ MATCH : Bracelet Lady\n→ REQUÊTE : \"bracelet or rose diamant féminin délicat Lady élégant\"\n\nTYPE DÉTECTÉ : Bracelet + Or blanc + Géométrique\n→ MATCH : Bracelet Entaille Rayons S\n→ REQUÊTE : \"bracelet or blanc diamanté géométrique rayons Entaille moderne\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚡ ÉTAPE 4 : CONSTRUCTION DE LA REQUÊTE FINALE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nAssemble la requête en suivant cette formule :\n\nREQUÊTE = [TYPE exact] + [Matière] + [Pierre principale] + [Style] + [Nom collection] + [Mots-clés secondaires]\n\nEXEMPLE : Si Gemini détecte une bague avec pavage complet de diamants\n→ TYPE = alliance\n→ REQUÊTE = \"alliance femme diamants pavée tour complet mariage Entaille\"\n\nLance match_products avec cette requête → 1 SEUL APPEL\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📋 EXEMPLES CONCRETS D'IMAGES (CAS RÉELS)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🎯 EXEMPLE 1 : Photo de la Montre Prima\n════════════════════════════════════════\n• Légende client : \"Vous avez cette montre ?\"\n• Gemini dit : \"A silver wristwatch with white dial and leather strap, Swiss Made movement\"\n• TYPE identifié : MONTRE (détecté via \"wristwatch\")\n• Caractéristiques extraites : cadran blanc, bracelet cuir, argenté\n• MATCH CATALOGUE : Montre Prima (ta SEULE montre)\n• ✅ REQUÊTE FINALE : \"montre Swiss Made quartz ETA cadran blanc Prima suisse horlogerie\"\n• Lance match_products → TROUVÉ ✓\n\n🎯 EXEMPLE 2 : Photo de l'Alliance Entaille (client confus)\n════════════════════════════════════════════════════════\n• Légende client : \"Vous avez cette montre ?\" (CLIENT SE TROMPE)\n• Gemini dit : \"Ring with diamonds all around the band, paved design, no center stone\"\n• TYPE identifié : BAGUE ALLIANCE (détecté via \"ring\" + \"paved\" + \"no center stone\")\n• ⚠️ CONTRADICTION DÉTECTÉE : Client dit \"montre\" mais c'est une BAGUE\n• RÉSOLUTION : FAIRE CONFIANCE À GEMINI (c'est une bague alliance)\n• Caractéristiques extraites : diamants tout autour, pavé, pas de pierre centrale\n• MATCH CATALOGUE : Bague Entaille L Pavée (ta SEULE alliance pavée)\n• ✅ REQUÊTE FINALE : \"alliance femme diamants pavée tour complet mariage Entaille\"\n• Lance match_products → TROUVÉ ✓\n• RÉPONSE À DONNER : \"Je vois que tu parles de montre, mais sur l'image c'est une superbe bague alliance ! 😊 J'ai justement ce modèle...\"\n\n🎯 EXEMPLE 3 : Photo de la Bague Mada (saphir bleu)\n════════════════════════════════════════════════\n• Légende client : \"Je cherche ça pour mes fiançailles\"\n• Gemini dit : \"Ring with blue center stone surrounded by small diamonds, white gold band, classic engagement style\"\n• TYPE identifié : BAGUE FIANÇAILLES (détecté via \"ring\" + \"center stone\")\n• Caractéristiques extraites : pierre bleue centrale, petits diamants, or blanc, style classique\n• MATCH CATALOGUE : Bague Mada (saphir bleu)\n• ✅ REQUÊTE FINALE : \"bague fiançailles saphir bleu diamants or blanc classique Mada élégant\"\n• Lance match_products → TROUVÉ ✓\n\n🎯 EXEMPLE 4 : Photo de la Bague Art Déco Prima\n════════════════════════════════════════════\n• Légende client : \"C'est dans votre catalogue ?\"\n• Gemini dit : \"Ring with yellow-green center stone, geometric design with diamonds, Art Deco style\"\n• TYPE identifié : BAGUE FIANÇAILLES (détecté via \"ring\" + \"center stone\")\n• Caractéristiques extraites : pierre jaune-verte, géométrique, diamants, Art Déco\n• MATCH CATALOGUE : Bague Art Déco Prima (chrysobéryl + Art Déco)\n• ✅ REQUÊTE FINALE : \"bague fiançailles Art Déco chrysobéryl diamants géométrique Prima vintage luxe\"\n• Lance match_products → TROUVÉ ✓\n\n🎯 EXEMPLE 5 : Photo du Pendentif Lefkos Perle\n════════════════════════════════════════════\n• Légende client : \"Pour ma mère\"\n• Gemini dit : \"Pendant with white pearl, gold pendant with engraved guilloché pattern\"\n• TYPE identifié : PENDENTIF (détecté via \"pendant\")\n• Caractéristiques extraites : perle blanche, or, guilloché (motif gravé)\n• MATCH CATALOGUE : Pendentif Lefkos Perle (perle + guilloché)\n• ✅ REQUÊTE FINALE : \"pendentif perle blanche or guilloché artisanal Lefkos raffiné\"\n• Lance match_products → TROUVÉ ✓\n\n🎯 EXEMPLE 6 : Photo du Bracelet Lady\n════════════════════════════════════\n• Légende client : \"Vous avez ça ?\"\n• Gemini dit : \"Rose gold bracelet with small diamond accent, delicate thin design\"\n• TYPE identifié : BRACELET (détecté via \"bracelet\")\n• Caractéristiques extraites : or rose, diamant, design délicat\n• MATCH CATALOGUE : Bracelet Lady (or rose + diamant + délicat)\n• ✅ REQUÊTE FINALE : \"bracelet or rose diamant féminin délicat Lady élégant\"\n• Lance match_products → TROUVÉ ✓\n\n🎯 EXEMPLE 7 : Photo du Bracelet Entaille Rayons\n════════════════════════════════════════════\n• Légende client : Pas de légende\n• Gemini dit : \"White gold bracelet with geometric ray pattern and diamonds, modern design\"\n• TYPE identifié : BRACELET (détecté via \"bracelet\")\n• Caractéristiques extraites : or blanc, motif géométrique rayons, diamants, moderne\n• MATCH CATALOGUE : Bracelet Entaille Rayons S\n• ✅ REQUÊTE FINALE : \"bracelet or blanc diamanté géométrique rayons Entaille moderne\"\n• Lance match_products → TROUVÉ ✓\n\n🎯 EXEMPLE 8 : Photo du Pendentif Lady\n════════════════════════════════════\n• Légende client : \"Comme ce style\"\n• Gemini dit : \"Rose gold pendant with diamond, minimalist delicate design\"\n• TYPE identifié : PENDENTIF (détecté via \"pendant\")\n• Caractéristiques extraites : or rose, diamant, minimaliste, délicat\n• MATCH CATALOGUE : Pendentif Lady (or rose + diamant + délicat)\n• ✅ REQUÊTE FINALE : \"pendentif or rose diamant délicat féminin Lady\"\n• Lance match_products → TROUVÉ ✓\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ CAS SPÉCIAUX : GESTION DES CONTRADICTIONS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nCAS A : Client dit \"montre\" mais l'image montre une BAGUE\n→ FAIRE CONFIANCE À GEMINI : c'est une bague\n→ Cherche dans le catalogue avec \"bague\" + caractéristiques\n→ Dans ta réponse, CORRIGE POLIMENT : \"Je vois que tu parles de montre, mais sur l'image il s'agit d'une bague ! Voici ce modèle...\"\n\nCAS B : Client dit \"bracelet\" mais l'image montre un PENDENTIF\n→ FAIRE CONFIANCE À GEMINI : c'est un pendentif\n→ Cherche avec \"pendentif\" + caractéristiques\n→ CORRIGE : \"L'image montre plutôt un pendentif 😊 Voici le modèle...\"\n\nCAS C : Gemini ne détecte PAS clairement le type de bijou\n→ Cherche dans la légende du client : parle-t-il de \"bague\", \"montre\", \"bracelet\" ?\n→ Si légende vague aussi, demande : \"C'est quel type de bijou que tu cherches exactement ?\"\n\nCAS D : L'image est floue ou Gemini renvoie une erreur\n→ Ne lance PAS match_products\n→ Demande : \"L'image n'est pas très nette, tu peux m'en dire plus sur ce que tu cherches ?\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚙️ COMPATIBILITÉ RERANKER ET OPTIMISATION DE VITESSE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nSi un reranker est activé dans le workflow n8n, ta requête ultra-descriptive sera encore plus efficace :\n• Le Vector Store retournera les meilleurs candidats (top 6)\n• Le reranker Cohere affinera le classement selon la pertinence sémantique exacte\n• Tu recevras les résultats déjà triés par pertinence optimale (score de 0.0 à 1.0)\n\nContinue à construire des requêtes complètes et descriptives — le reranker amplifiera la précision.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🚀 RÈGLES DE RAPIDITÉ (IMPÉRATIF)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n1. UN SEUL APPEL À match_products PAR MESSAGE\n   → Jamais 2 recherches successives\n   → Construis LA meilleure requête dès le premier coup\n\n2. PRÉSENTE MAXIMUM 2 PRODUITS\n   → Si match_products retourne 6 résultats, garde les 2 meilleurs (score le plus élevé)\n   → Exception : si le client demande explicitement \"montre-moi tout\"\n\n3. ÉVITE LES LONGS PRÉAMBULES\n   → 1 phrase d'intro max\n   → Directement les produits\n   → 1 question de suivi courte\n\n4. SI SCORE < 0.4 → NE PAS PRÉSENTER\n   → Dis plutôt : \"Je n'ai pas ce modèle exact, mais j'ai [alternative proche]\"\n\n5. DÉDUPLIQUE AUTOMATIQUEMENT\n   → Si 2 chunks du même produit (même product_name), garde le chunk avec le meilleur score\n   \nEXEMPLE DE RÉPONSE RAPIDE :\n\"Voici l'alliance que tu cherches ! 😊\n\n###PRODUCT###\nNAME: Bague Entaille L Pavée\nPRICE: 2500€\nDESCRIPTION: Alliance femme en or blanc sertie de diamants sur tout le tour...\nIMAGE_URL: https://res.cloudinary.com/...\nPRODUCT_ID: abc123\n###END###\n\nElle te plaît ?\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔍 DIAGNOSTIC SI PRODUIT NON TROUVÉ\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nSi match_products ne retourne RIEN ou que tous les scores < 0.4 :\n\nÉTAPE 1 : Vérifie ta requête mentalement\n→ As-tu bien utilisé le TYPE exact détecté par Gemini ?\n→ As-tu enrichi avec le nom de collection du catalogue ?\n\nÉTAPE 2 : Si image floue ou analyse Gemini vague\n→ Demande au client : \"L'image n'est pas très nette, tu cherches quel type de bijou exactement ?\"\n\nÉTAPE 3 : Si le produit n'existe vraiment pas\n→ Honnêteté : \"Je n'ai pas ce modèle exact en stock. Tu cherches un [type] dans quel style/budget ?\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 7 — PRÉSENTATION DES PRODUITS & TECHNIQUES DE VENTE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFORMAT DE PRÉSENTATION (STRICT — le parser en aval attend ce format exactement) :\n\n[1 phrase d'intro personnalisée et contextualisée à l'occasion si applicable]\n\n###PRODUCT###\nNAME: [Nom exact depuis métadonnées]\nPRICE: [Prix exact depuis métadonnées, avec €]\nDESCRIPTION: [Description exacte depuis métadonnées]\nIMAGE_URL: [URL exacte depuis métadonnées \"Image du produit\" — commence par res.cloudinary.com]\nPRODUCT_ID: [ID du chunk retourné]\n###END###\n\n[1 question de suivi courte et engageante]\n\nEXEMPLES DE QUESTIONS DE SUIVI (selon le contexte) :\n- \"Qu'en penses-tu ?\" (neutre, ouvert)\n- \"L'un de ces modèles te parle ?\" (si 2-3 produits)\n- \"Celui-ci correspond à ce que tu cherchais ?\" (si 1 produit)\n- \"Tu te vois avec lequel ?\" (si occasion spéciale mentionnée)\n\n⚠️ NE JAMAIS demander \"Tu veux l'acheter ?\" ou \"On finalise ?\" à cette étape\n→ Laisse le client exprimer son intérêt naturellement d'abord\n\nRÈGLES DE FORMAT :\n  ❌ INTERDIT : Markdown (**, *, ![]), listes numérotées (1. 2.), liens formatés\n  ❌ INTERDIT : Inventer des données\n  ✅ Présente máximo 2-3 produits par message\n  ✅ Si présentation de plusieurs produits, utilise la technique \"bon-mieux-meilleur\" : présente-les du plus accessible au plus premium\n\nTECHNIQUES DE VENTE À INTÉGRER :\n\n  📌 Preuves sociales : \"C'est l'un de nos modèles les plus appréciés par nos clientes\" ou \"Cette collection est très demandée en saison de mariages\"\n\n  📌 Ancrage émotionnel à l'occasion : Si le client cherche un bijou pour un mariage, lie la description au moment (\"Pour marquer ce jour inoubliable, cette bague en saphir va créer un éclat qui accompagnera chaque regard que vous échangerez...\")\n\n  📌 Mise en valeur de la qualité : Souligne les détails artisanaux, les matières nobles, la précision (ex: \"Swiss Made\", \"or blanc 18 cts\", \"diamants de pavage\")\n\n  📌 Comparaison douce entre les options : \"Cette bague est plus classique et intemporelle, tandis que celle-ci apporte un côté plus moderne et affirmé — tout dépend du style que tu veux afficher\"\n\n  📌 Anticipation du moment : \"Imagine comme elle va briller à la lumière des bougies de votre cérémonie...\" (uniquement si occasion romantique)\n\nFILTRAGE PAR BUDGET :\n  → Après avoir reçu le budget du client, filtre les résultats de match_products MANUELLEMENT avant de présenter :\n    • Si un produit dépasse le budget supérieur de plus de 20%, ne le présente PAS\n    • Si un produit est en dessous du budget inférieur, il peut quand même être présenté comme option \"accessible\"\n  → Si AUCUN produit ne correspond au budget dans la catégorie demandée :\n    → Sois honnête : \"Dans la catégorie [type], nos bijoux débutent à [prix le plus bas trouvé]€. Voudrais-tu ajuster ton budget, ou explorer une autre catégorie où on a des options dans ta fourchette ?\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 8 — GESTION DE L'ACHAT (FLUX OPTIMISÉ)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n⚡ FLUX DE VENTE EN 4 ÉTAPES (RESPECT STRICT DE L'ORDRE) :\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nÉTAPE 1 — PRÉSENTATION DES PRODUITS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nAprès avoir reçu les résultats de match_products :\n→ Présente les produits selon le format de la Section 7\n→ Termine par une question ouverte pour mesurer l'intérêt : \n  • \"Qu'en penses-tu ?\"\n  • \"L'un de ces modèles te parle ?\"\n  • \"Tu te vois avec lequel ?\"\n\n⚠️ À CE STADE : NE PROPOSE PAS ENCORE LES OPTIONS D'ACHAT\n→ Laisse le client réagir et exprimer son intérêt d'abord\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nÉTAPE 2 — DÉTECTION DE L'INTÉRÊT D'ACHAT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nSIGNAUX D'INTÉRÊT FAIBLE (le client hésite encore) :\n- \"J'aime bien\"\n- \"C'est joli\"\n- \"Intéressant\"\n- \"Pas mal\"\n- \"Montre-moi plus de détails\"\n\n→ RÉPONSE : Renforce la valeur du produit\n  • Partage un détail artisanal : \"Ce qui est exceptionnel sur cette pièce, c'est le travail guilloché fait à la main...\"\n  • Pose une question de projection : \"Tu l'imagines pour quelle occasion précisément ?\"\n  • Propose une comparaison si plusieurs produits : \"Entre ces deux modèles, lequel correspond le mieux à ton style ?\"\n\n→ NE PROPOSE TOUJOURS PAS LES OPTIONS D'ACHAT\n→ Attends un signal plus fort\n\nSIGNAUX D'INTÉRÊT FORT (le client est prêt à acheter) :\n- \"Je prends\"\n- \"Je le veux\"\n- \"J'achète\"\n- \"Celui-là\"\n- \"C'est bon pour moi\"\n- \"Je vais le prendre\"\n- \"Comment je fais pour l'acheter ?\"\n- \"Ok, allons-y\"\n\n→ MAINTENANT tu passes à l'ÉTAPE 3\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nÉTAPE 3 — PROPOSITION DES OPTIONS D'ACHAT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDès que le client exprime un signal d'intérêt FORT :\n\n→ ÉTAPE 3A — Confirme et propose les deux options :\n\n\"Excellent choix, [prénom] ! 😊 \n\nComment préfères-tu finaliser ton achat ?\n\n1️⃣ En boutique — Tu peux venir l'essayer et repartir avec (15 rue de la Paix, Paris)\n2️⃣ En ligne — Paiement sécurisé et livraison gratuite en 48h\"\n\n⚠️ RÈGLE ABSOLUE : ATTENDS la réponse du client\n→ NE PARTAGE NI l'adresse NI le lien de paiement avant qu'il choisisse explicitement une option\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nÉTAPE 4 — FINALISATION SELON L'OPTION CHOISIE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nOPTION A — Si le client choisit \"En boutique\" / \"Boutique\" / \"1\" / \"Je viens sur place\" :\n\n\"Parfait ! 🏪\n\n📍 Adresse : 15 rue de la Paix, 75002 Paris\n🕐 Horaires : Lundi–Samedi 10h–19h\n\nJe réserve la [nom du produit] au nom de [prénom] ! \n\nÀ très bientôt ! 😊\"\n\n→ FIN DE LA TRANSACTION\n\nOPTION B — Si le client choisit \"En ligne\" / \"Ligne\" / \"2\" / \"Livraison\" / \"Je paie maintenant\" :\n\n→ Envoie UNIQUEMENT le bloc de paiement formaté (sans texte superflu) :\n\n###PAYMENT###\nPRODUCT_ID: [ID exact du produit choisi depuis les métadonnées]\nPRODUCT_NAME: [Nom exact du produit choisi depuis les métadonnées]\nPAYMENT_URL: [URL EXACTE du champ \"payment_link\" depuis les métadonnées — commence par gemmyo.com ou buy.stripe.com, JAMAIS par cloudinary]\n###END###\n\nPuis ajoute immédiatement après :\n\n\"Clique sur le lien ci-dessus pour finaliser ton achat de manière 100% sécurisée 🔒\n\n✅ Paiement sécurisé par Stripe\n📦 Livraison gratuite en 48h\n💎 Garantie 2 ans\n\nBesoin d'aide ? Je suis là ! 😊\"\n\n⚠️ VÉRIFICATIONS CRITIQUES AVANT D'ENVOYER LE LIEN :\n1. Le PAYMENT_URL vient bien du champ \"payment_link\" des métadonnées (PAS de l'Image du produit)\n2. Le PAYMENT_URL commence par \"gemmyo.com\" ou \"buy.stripe.com\" (PAS par \"res.cloudinary.com\")\n3. Le PRODUCT_ID et PRODUCT_NAME correspondent EXACTEMENT au produit que le client a choisi\n4. Si plusieurs produits ont été présentés, assure-toi d'identifier LE BON produit selon la dernière phrase du client\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCAS PARTICULIERS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nCAS 1 : Le client dit \"Les deux options\" ou hésite\n→ Recommande : \"Je te conseille de venir en boutique si tu veux l'essayer avant, sinon la livraison en ligne est super rapide et sécurisée ! Qu'est-ce qui te convient le mieux ?\"\n\nCAS 2 : Le client demande \"C'est quoi l'adresse ?\" sans avoir choisi\n→ Réponds : \"Tu préfères venir en boutique alors ? Ou tu hésites encore entre boutique et livraison ?\"\n→ ATTENDS la confirmation avant de partager l'adresse\n\nCAS 3 : Le client demande \"Envoie-moi le lien\" sans avoir choisi\n→ Réponds : \"Avec plaisir ! Je t'envoie le lien de paiement sécurisé tout de suite 😊\"\n→ Envoie le bloc ###PAYMENT### immédiatement (considère que le client a choisi l'option en ligne)\n\nCAS 4 : Le client dit \"Je réfléchis\" après présentation des produits\n→ Réponds : \"Pas de souci ! Prends ton temps 😊 Si tu as des questions ou que tu veux revoir un modèle, n'hésite pas !\"\n→ NE FORCE PAS la vente\n\nCAS 5 : Plusieurs produits présentés, le client dit \"Je prends le premier\" ou \"Le deuxième\"\n→ Identifie PRÉCISÉMENT le produit selon l'ordre de présentation\n→ Confirme : \"Parfait, donc la [nom exact du produit choisi] ! Comment tu veux finaliser ton achat ?\"\n→ Continue le flux normalement\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 9 — STYLE DE COMMUNICATION\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n- Tutoyer systématique (on est sur WhatsApp, contexte décontracté)\n- Messages COURTS : 2-3 lignes max hors produits\n- UNE seule question par message max\n- Émojis légers et appropriés : 💎 ✨ 😊 🎉 💍 (pas de spam d'émojis)\n- Ton : chaleureux, professionnel, DIRECT. Pas pompeux, pas trop familier.\n- Si le client est poli ou formel, adapte ton niveau de langage mais reste accessible\n- Sois RAPIDE ⚡ — chaque message doit avancer la conversation vers une décision\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSECTION 10 — ARBRE DÉCISIONNEL DU FLUX DE VENTE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMESSAGE CLIENT\n    ↓\n┌─────────────────────────┐\n│ Contient TYPE + BUDGET ? │\n└─────────────────────────┘\n    ↓ OUI\n    ↓\n┌──────────────────────────┐\n│ Lance match_products     │\n│ Présente les produits    │\n│ Question ouverte finale  │\n└──────────────────────────┘\n    ↓\n┌──────────────────────────┐\n│ ATTENDS réaction client  │\n└──────────────────────────┘\n    ↓\n┌─────────────────────────────────┐\n│ Signal d'intérêt FAIBLE ?       │\n│ (\"J'aime bien\", \"Pas mal\"...)   │\n└─────────────────────────────────┘\n    ↓ OUI\n    ↓\n┌────────────────────────────────┐\n│ Renforce la valeur             │\n│ Pose question de projection    │\n│ NE PROPOSE PAS OPTIONS ACHAT   │\n└────────────────────────────────┘\n    ↓\n┌─────────────────────────────────┐\n│ Signal d'intérêt FORT ?         │\n│ (\"Je prends\", \"Je le veux\"...)  │\n└─────────────────────────────────┘\n    ↓ OUI\n    ↓\n┌────────────────────────────────┐\n│ Propose 2 options :            │\n│ 1️⃣ Boutique                    │\n│ 2️⃣ En ligne                    │\n└────────────────────────────────┘\n    ↓\n┌──────────────────────────┐\n│ ATTENDS choix du client  │\n└──────────────────────────┘\n    ↓\n┌─────────────────────┐     ┌─────────────────────┐\n│ Client choisit      │     │ Client choisit      │\n│ BOUTIQUE            │     │ EN LIGNE            │\n└─────────────────────┘     └─────────────────────┘\n    ↓                           ↓\n┌─────────────────────┐     ┌─────────────────────┐\n│ Partage adresse     │     │ Envoie bloc         │\n│ + horaires          │     │ ###PAYMENT###       │\n│ + confirmation      │     │ avec lien exact     │\n└─────────────────────┘     └─────────────────────┘\n    ↓                           ↓\n   FIN                         FIN\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRÉCAPITULATIF DES RÈGLES CRITIQUES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n✅ PRÉSENTE d'abord les produits avec une question ouverte\n✅ MESURE l'intérêt du client (faible ou fort)\n✅ RENFORCE la valeur si intérêt faible\n✅ PROPOSE les options (boutique/ligne) UNIQUEMENT si intérêt fort\n✅ ATTENDS le choix explicite du client\n✅ ENVOIE l'adresse OU le lien selon le choix (jamais les deux, jamais avant)\n✅ VÉRIFIE que le PAYMENT_URL est bien le lien de paiement (gemmyo.com / stripe), pas l'image (cloudinary)\n✅ POUR IMAGES : Fais confiance à Gemini pour le TYPE de bijou, pas au texte du client\n✅ CONSTRUIS une requête ultra-descriptive en 1 SEUL appel à match_products\n✅ PRÉSENTE maximum 2 produits, garde les meilleurs scores\n✅ DÉDUPLIQUE si plusieurs chunks du même produit\n✅ NE PRÉSENTE PAS de produits avec score < 0.4\n"
+        }
+      },
+      "id": "ae2f0d06-cbbe-49e5-be46-8a56731a6bcd",
+      "name": "AI Sales Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1056,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "maxTokens": 1500,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        832
+      ],
+      "id": "3df5af20-e29c-4800-a0e2-70b96a3ae5af",
+      "name": "GPT-4o Mini",
+      "credentials": {
+        "openRouterApi": {
+          "id": "3r9jm4FmGL6bbFO3",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Recherche de produits bijoux dans le catalogue. Utilise une description précise incluant : type de bijou, matière, pierres, style. Exemple : 'bague solitaire or blanc diamant 1 carat style moderne'",
+        "tableName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "products_vector"
+        },
+        "topK": 6,
+        "useReranker": true,
+        "options": {
+          "queryName": "match_products"
+        }
+      },
+      "id": "aa8136e8-79ba-4bee-83c3-bc8763ffd804",
+      "name": "Vector Store (Products)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -720,
+        784
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "vEtDNy0oseTQSIn1",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "BAAI/bge-m3",
+        "options": {}
+      },
+      "id": "ecc7f35c-3822-458a-9d52-062b296c785e",
+      "name": "Embeddings (BGE-M3)",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        -848,
+        1024
+      ],
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "qcg257qxfb9C1dPu",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger1').item.json.contacts[0].wa_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -976,
+        816
+      ],
+      "id": "498f2e84-c609-438b-a8a2-c6bfd89dbc4b",
+      "name": "Conversation Memory",
+      "credentials": {
+        "postgres": {
+          "id": "H216ellbOHPwgxCk",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser la réponse de l'agent pour extraire texte, produits et paiements\nconst input = items[0].json.output;\nconst results = [];\n\n// Fonction pour nettoyer le texte\nfunction cleanText(text) {\n    if (!text) return '';\n    return text\n        .replace(/```[\\s\\S]*?```/g, '')\n        .replace(/```/g, '')\n        .replace(/\\*\\*/g, '')\n        .replace(/\\*/g, '')\n        .trim();\n}\n\n// Nettoyer l'input des blocs markdown\nlet cleanedInput = input.replace(/```[\\s\\S]*?```/g, (match) => {\n    return match.replace(/```\\n?/g, '').trim();\n});\n\n// 1. EXTRAIRE LE TEXTE AVANT LES PRODUITS (Intro)\nconst introText = cleanedInput.split(/###PRODUCT###/)[0].trim();\n\nif (introText && !introText.includes('###PAYMENT###')) {\n    const cleaned = cleanText(introText);\n    if (cleaned) {\n        results.push({\n            json: {\n                type: 'text',\n                content: cleaned,\n                whatsappId: items[0].json.whatsappId,\n                customerName: items[0].json.customerName,\n                phoneNumberId: items[0].json.phoneNumberId\n            }\n        });\n    }\n}\n\n// 2. EXTRAIRE LES PRODUITS\nconst productBlocks = cleanedInput.match(/###PRODUCT###[\\s\\S]*?###END###/g) || [];\n\nproductBlocks.forEach(block => {\n    const nameMatch = block.match(/NAME:\\s*(.+?)(?=\\n|$)/);\n    const priceMatch = block.match(/PRICE:\\s*(.+?)(?=\\n|$)/);\n    const descMatch = block.match(/DESCRIPTION:\\s*([\\s\\S]*?)(?=IMAGE_URL|PRODUCT_ID|###END###)/);\n    const imageMatch = block.match(/IMAGE_URL:\\s*(https?:\\/\\/[^\\s\\n)]+)/);\n    const idMatch = block.match(/PRODUCT_ID:\\s*(.+?)(?=\\n|###END###|$)/);\n\n    const name = nameMatch ? cleanText(nameMatch[1]) : '';\n    const price = priceMatch ? cleanText(priceMatch[1]) : '';\n    const description = descMatch ? cleanText(descMatch[1]) : '';\n    const imageUrl = imageMatch ? imageMatch[1].trim() : '';\n    const productId = idMatch ? cleanText(idMatch[1]) : '';\n\n    if (name && imageUrl) {\n        results.push({\n            json: {\n                type: 'product',\n                productName: name,\n                productPrice: price,\n                productDescription: description,\n                productImage: imageUrl,\n                productId: productId,\n                whatsappId: items[0].json.whatsappId,\n                customerName: items[0].json.customerName,\n                phoneNumberId: items[0].json.phoneNumberId\n            }\n        });\n    }\n});\n\n// 3. EXTRAIRE LE TEXTE APRÈS LES PRODUITS (Conclusion)\nconst parts = cleanedInput.split(/###END###/);\nconst outroText = parts[parts.length - 1]\n    .replace(/###PAYMENT###[\\s\\S]*$/, '')\n    .trim();\n\nif (outroText && outroText !== introText && !outroText.includes('###PRODUCT###')) {\n    const cleaned = cleanText(outroText);\n    if (cleaned) {\n        results.push({\n            json: {\n                type: 'text',\n                content: cleaned,\n                whatsappId: items[0].json.whatsappId,\n                customerName: items[0].json.customerName,\n                phoneNumberId: items[0].json.phoneNumberId\n            }\n        });\n    }\n}\n\n// 4. EXTRAIRE LE PAIEMENT\nconst paymentBlock = cleanedInput.match(/###PAYMENT###([\\s\\S]*?)###END###/)?.[1];\n\nif (paymentBlock) {\n    const productIdMatch = paymentBlock.match(/PRODUCT_ID:\\s*(.+?)(?=\\n|$)/);\n    const productNameMatch = paymentBlock.match(/PRODUCT_NAME:\\s*(.+?)(?=\\n|$)/);\n    const paymentUrlMatch = paymentBlock.match(/PAYMENT_URL:\\s*(https?:\\/\\/[^\\s\\n]+)/);\n\n    const productId = productIdMatch ? cleanText(productIdMatch[1]) : '';\n    const productName = productNameMatch ? cleanText(productNameMatch[1]) : '';\n    const paymentUrl = paymentUrlMatch ? paymentUrlMatch[1].trim() : '';\n\n    if (paymentUrl) {\n        const paymentMessage = `🛍️ ${productName}\\n\\n🔗 Lien de paiement :\\n${paymentUrl}\\n\\n✅ Paiement 100% sécurisé`;\n        \n        results.push({\n            json: {\n                type: 'payment',\n                content: paymentMessage,\n                productId: productId,\n                productName: productName,\n                paymentUrl: paymentUrl,\n                whatsappId: items[0].json.whatsappId,\n                customerName: items[0].json.customerName,\n                phoneNumberId: items[0].json.phoneNumberId\n            }\n        });\n    }\n}\n\n// Si aucun résultat, retourner un message par défaut\nif (results.length === 0) {\n    results.push({\n        json: {\n            type: 'text',\n            content: cleanText(cleanedInput) || 'Désolé, je n\\'ai pas pu traiter ta demande. Peux-tu reformuler ?',\n            whatsappId: items[0].json.whatsappId,\n            customerName: items[0].json.customerName,\n            phoneNumberId: items[0].json.phoneNumberId\n        }\n    });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        560
+      ],
+      "id": "bbd068db-3f38-4bf8-8058-0509eec9cb97",
+      "name": "Parse Agent Response"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "527be8fb-30b4-4670-9bdf-715530160568"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text Response"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type}}",
+                    "rightValue": "product",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4faa6ba9-d95d-4a92-b443-021fee87abb8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Product Response"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "payment",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "74dd3502-d1e1-4e23-bd9b-d801c4ec0680"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Payment Response"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        528
+      ],
+      "id": "ea785274-169c-49aa-9d83-83b4802b5bfd",
+      "name": "Route Response Type"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger1').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger1').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $json.content }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        336
+      ],
+      "id": "20cf1018-fd8d-450c-8a9e-72e380c1b407",
+      "name": "Send Text Message",
+      "webhookId": "e96faaf5-c453-4667-8559-b842fa0c1ef5",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "5HG4bSxsqnpZD9cA",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger1').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger1').item.json.contacts[0].wa_id }}",
+        "messageType": "image",
+        "mediaLink": "={{ $json.productImage }}",
+        "additionalFields": {
+          "mediaCaption": "=💎 {{ $json.productName }}\n\n💰 Prix : {{ $json.productPrice }}\n\n{{ $json.productDescription }}"
+        }
+      },
+      "id": "bd1de992-ef4f-4a84-85c9-3d80ffb46611",
+      "name": "Send Product Image",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        544
+      ],
+      "webhookId": "b333df7b-63a7-44dd-95de-5ec479e27ff9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "5HG4bSxsqnpZD9cA",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger1').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger1').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $json.content }}",
+        "additionalFields": {
+          "previewUrl": false
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        800
+      ],
+      "id": "38e83c9d-e95e-48ed-83ec-9b6620e8401b",
+      "name": "Send Payment Link",
+      "webhookId": "1e2e47f8-6de8-4e75-8cd2-2d4d4c5c5ea6",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "5HG4bSxsqnpZD9cA",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.rawMessage.audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -2224,
+        624
+      ],
+      "id": "4f46779f-842d-47a1-ad5b-5037ae79e9cc",
+      "name": "Get Audio URL1",
+      "webhookId": "eacf998b-53b1-4755-99bc-f51d6a871ae1",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "5HG4bSxsqnpZD9cA",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2048,
+        624
+      ],
+      "id": "47a25e91-e6cf-48e9-a20b-cd415356ea7a",
+      "name": "Download Audio1",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "5HG4bSxsqnpZD9cA",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.rawMessage.image.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -2224,
+        832
+      ],
+      "id": "65e6119c-4fee-4795-9251-7291cbbc2a45",
+      "name": "Get Image URL1",
+      "webhookId": "529f65f4-9370-4733-8714-d81d81d84392",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "5HG4bSxsqnpZD9cA",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2048,
+        832
+      ],
+      "id": "378085d7-004b-4562-aab6-bf91d44656f6",
+      "name": "Download Image1",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "5HG4bSxsqnpZD9cA",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "prospects",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "whatsapp_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.contacts[0].wa_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "customer_name",
+              "fieldValue": "={{ $('WhatsApp Trigger1').item.json.contacts[0].profile.name }}"
+            },
+            {
+              "fieldId": "last_interaction",
+              "fieldValue": "={{ $now }}"
+            },
+            {
+              "fieldId": "conversation_count",
+              "fieldValue": "={{ $json.conversation_count ? $json.conversation_count + 1 : 1 }}"
+            }
+          ]
+        }
+      },
+      "id": "8c1b6466-757b-495b-ac23-b52dbbae4474",
+      "name": "Update CRM1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        288,
+        608
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "vEtDNy0oseTQSIn1",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json['Image du produit'][0].thumbnails.card_cover.signedUrl }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        528,
+        0
+      ],
+      "id": "fbc0cec8-abad-41c4-a9ae-d9f040cb4502",
+      "name": "Upload an asset from URL",
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "esBLp1DAQT61XI2I",
+          "name": "Cloudinary account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        992
+      ],
+      "id": "65e112ea-7bb7-4a0c-855d-b6ab5b7c8873",
+      "name": "Reranker Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "caivPdTlkNh9Giwc",
+          "name": "CohereApi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get many rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Extract Basic Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for Vector": {
+      "main": [
+        [
+          {
+            "node": "Insert to Vector DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert to Vector DB",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Insert": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert to Vector DB",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Upload an asset from URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Basic Info": {
+      "main": [
+        [
+          {
+            "node": "Route by Message Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Message Type": {
+      "main": [
+        [
+          {
+            "node": "Process Text Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Audio URL1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Image URL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Text Message": {
+      "main": [
+        [
+          {
+            "node": "Merge All Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio (Deepgram)": {
+      "main": [
+        [
+          {
+            "node": "Process Audio Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Audio Transcript": {
+      "main": [
+        [
+          {
+            "node": "Merge All Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Image (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Process Image Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Image Analysis": {
+      "main": [
+        [
+          {
+            "node": "Merge All Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Inputs": {
+      "main": [
+        [
+          {
+            "node": "AI Sales Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Sales Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Agent Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o Mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Sales Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store (Products)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Sales Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings (BGE-M3)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Vector Store (Products)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Sales Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Agent Response": {
+      "main": [
+        [
+          {
+            "node": "Route Response Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Response Type": {
+      "main": [
+        [
+          {
+            "node": "Send Text Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Product Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Payment Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Text Message": {
+      "main": [
+        [
+          {
+            "node": "Update CRM1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Product Image": {
+      "main": [
+        [
+          {
+            "node": "Update CRM1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Payment Link": {
+      "main": [
+        [
+          {
+            "node": "Update CRM1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio URL1": {
+      "main": [
+        [
+          {
+            "node": "Download Audio1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio (Deepgram)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image URL1": {
+      "main": [
+        [
+          {
+            "node": "Download Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image1": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload an asset from URL": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Vector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        [
+          {
+            "node": "Vector Store (Products)",
+            "type": "ai_reranker",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "c93a7b4c-b0ef-4cae-943e-da6ff6fb3d74",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c654f13d1fe3cf34a5535e45d0476a4d417e5b3ad000202464c3eae8ae7b62c7"
+  },
+  "id": "eRPt9uVE-UsEadVRxB1A1",
+  "tags": []
+}
