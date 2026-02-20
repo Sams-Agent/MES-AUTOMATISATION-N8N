@@ -1,0 +1,1103 @@
+{
+  "name": "Assisatant clinique sur whatsapp",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        352,
+        400
+      ],
+      "id": "9d730574-8f60-4c21-80aa-d16c428d4806",
+      "name": "WhatsApp Trigger",
+      "webhookId": "1d154858-b55f-489b-ac96-a598b1c5df19",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "eXbOJhp2DmHAixte",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "messages",
+        "limit": 15,
+        "filterType": "string",
+        "filterString": "=conversation_id=eq.{{ $json.conversation_id }}&order=created_at.desc"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1952,
+        384
+      ],
+      "id": "0487d9a6-2390-41b4-b6d9-5dbb331265dd",
+      "name": "Get Last 15 Messages",
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "phone_field",
+              "name": "phone",
+              "value": "={{ $json.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "patient_name_field",
+              "name": "patient_name",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "wa_id_field",
+              "name": "wa_id",
+              "value": "={{ $json.contacts[0].wa_id }}",
+              "type": "string"
+            },
+            {
+              "fieldId": "message_field",
+              "name": "message",
+              "value": "={{ $json.messages[0].text?.body || 'Message reçu' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        400
+      ],
+      "id": "22048bd3-1462-4e9d-8f6f-08252763b875",
+      "name": "Extract Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "conversations",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $json.phone }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        864,
+        384
+      ],
+      "id": "44acaea8-d4d6-4917-9e83-441a46967d02",
+      "name": "Check Existing Conversation1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "check_conversation_exists",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        384
+      ],
+      "id": "2a7d4264-b079-46bd-ad54-ca49a45114dd",
+      "name": "Is Existing Patient?1"
+    },
+    {
+      "parameters": {
+        "tableId": "conversations",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('Extract Fields1').item.json.phone }}"
+            },
+            {
+              "fieldId": "patient_name",
+              "fieldValue": "={{ $('Extract Fields1').item.json.patient_name }}"
+            },
+            {
+              "fieldId": "last_intent",
+              "fieldValue": "NOUVEAU"
+            },
+            {
+              "fieldId": "step",
+              "fieldValue": "INITIAL"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "ACTIVE"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        544
+      ],
+      "id": "7bcea128-628b-45e1-a1b1-be9d31a66480",
+      "name": "Create New Conversation1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1408,
+        384
+      ],
+      "id": "bef37bb1-9eda-452d-b26a-cc3f6a2b56b7",
+      "name": "Merge Conversations1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst originalMessage = $('Extract Fields1').first().json.message;\nconst originalPhone = $('Extract Fields1').first().json.phone;\n\nreturn items.map(item => {\n  const conversationId = item.json.id || item.json.id_1;\n  \n  return {\n    json: {\n      conversation_id: conversationId,\n      phone: originalPhone,\n      patient_name: item.json.patient_name,\n      last_intent: item.json.last_intent,\n      step: item.json.step,\n      status: item.json.status,\n      motif: item.json.motif,\n      date_souhaitee: item.json.date_souhaitee,\n      rdv_datetime: item.json.rdv_datetime,\n      message: originalMessage\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        384
+      ],
+      "id": "0566f004-b523-4ab1-9ac4-57a2e1b9e479",
+      "name": "Normalize Conversation ID1"
+    },
+    {
+      "parameters": {
+        "tableId": "messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $json.conversation_id }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "user"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $json.message }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        384
+      ],
+      "id": "9f89c78a-eeb2-4c51-a672-d209bebe04e5",
+      "name": "Save User Message1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const messages = $input.all();\nconst conversation = $('Normalize Conversation ID1').first().json;\n\nconst currentMessage = conversation.message || '';\n\nconst historyText = messages.reverse().slice(-10).map(msg => \n  `${msg.json.role === 'user' ? 'Patient' : 'Assistant'}: ${msg.json.content}`\n).join('\\n');\n\nconst contextMessage = `\nPatient: ${conversation.patient_name || 'Inconnu'}\nTéléphone: ${conversation.phone || 'Non détecté'} \nÉtape: ${conversation.step || 'INITIAL'}\nIntention: ${conversation.last_intent || 'Aucune'}\nMotif: ${conversation.motif || 'Non renseigné'}\nDate souhaitée: ${conversation.date_souhaitee || 'Non renseignée'}\nRDV existant: ${conversation.rdv_datetime || 'Aucun'}\n`;\n\nconst maintenant = new Date();\nconst dateLisible = maintenant.toLocaleDateString('fr-FR', { \n  weekday: 'long', \n  year: 'numeric', \n  month: 'long', \n  day: 'numeric' \n});\n\nreturn [{\n  json: {\n    formatted_history: historyText,\n    context: contextMessage,\n    current_message: currentMessage,\n    date_du_jour: dateLisible,\n    phone: conversation.phone, \n    conversation_id: conversation.conversation_id,\n    patient_name: conversation.patient_name || 'Inconnu'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2128,
+        384
+      ],
+      "id": "ef830f7d-cfa2-4db8-8c5c-f2a5159059eb",
+      "name": "Format History for AI1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=HISTORIQUE RÉCENT (10 derniers messages):\n{{ $json.formatted_history }}\n\nCONTEXTE PATIENT:\n{{ $json.context }}\n\nDATE DU JOUR:\n{{ $json.date_du_jour }}\n\nMESSAGE À TRAITER:\n{{ $json.current_message }}",
+        "options": {
+          "systemMessage": "=Tu es l'assistant IA expert de la **Clinique Divine Miséricorde** 🏥. Ton rôle est de gérer les conversations WhatsApp avec professionnalisme, empathie et chaleur humaine.\n\n## 😊 STYLE DE COMMUNICATION HOSPITALIER\n\n**UTILISATION DES EMOJIS (IMPORTANT) :**\nTu dois utiliser des emojis de manière naturelle et fréquente pour créer une ambiance chaleureuse et rassurante. Voici les emojis à privilégier :\n\n**Emojis médicaux/santé :**\n🏥 Clinique/hôpital | 💊 Médicaments | 🩺 Consultation | 🌡️ Fièvre | 💉 Soins | 🚑 Urgence | ❤️‍🩹 Guérison | 🩹 Premiers soins\n\n**Emojis organisationnels :**\n📅 Rendez-vous | ⏰ Heure | ✅ Confirmation | 📝 Note | 📞 Contact | ✉️ Message\n\n**Emojis émotionnels/empathiques :**\n😊 Accueil | 🙏 Compassion | 💙 Bienveillance | 😌 Réconfort | 🤗 Soutien | 💪 Encouragement\n\n**Emojis d'urgence/alerte :**\n🚨 URGENCE VITALE | ⚠️ Attention | ⏱️ Rapidité | 🔴 Priorité\n\n**RÈGLES D'USAGE DES EMOJIS :**\n- Utilise 2-4 emojis par message\n- Place-les naturellement dans le texte\n- Privilégie les emojis médicaux pour créer le contexte hospitalier\n- Ajoute des emojis émotionnels pour l'empathie\n\n## 📅 RÉFÉRENCE TEMPORELLE\n- Aujourd'hui: {{ $json.date_du_jour }}\n- Année: 2026\n- Fuseau: UTC+01:00\n- Format date: ISO8601 strict → YYYY-MM-DDTHH:MM:00+01:00\n\n## 🕐 HORAIRES CLINIQUE\n- Jours: Lundi-Vendredi\n- Heures: 08h00-18h00\n- Pause: 12h30-14h00 (pas de RDV)\n- Créneaux standards: 08h30, 09h00, 09h30, 10h00, 10h30, 11h00, 11h30, 14h00, 14h30, 15h00, 15h30, 16h00, 16h30, 17h00, 17h30\n\n## 🛠️ TES 5 OUTILS\n\n### 1. FAQ Tool\nQuestions sur horaires, adresse, tarifs. Utilise keywords de la question.\n\n### 2. Calendar Availability Tool\n**ATTENTION CRITIQUE : Retourne les ÉVÉNEMENTS EXISTANTS, PAS les créneaux libres.**\n\n**LOGIQUE D'INTERPRÉTATION :**\n- After : Début journée (ex: 2026-02-10T08:00:00+01:00)\n- Before : Fin journée (ex: 2026-02-10T18:00:00+01:00)\n- Return_All : false\n- Limit : 50\n\n**INTERPRÉTATION DU RETOUR :**\n- `[]` (vide) = Journée LIBRE → Propose créneaux standards (09h00, 11h00, 14h30)\n- `[événements]` = Ces créneaux sont OCCUPÉS → Propose créneaux NON présents dans le retour\n\n### 3. Calendar Create Event Tool\n✅ Utilise si: nom, motif, créneau confirmé, créneau libre\n\nParamètres:\n- Summary: \"RDV Médical - [Nom Prénom]\"\n- Description: \"Motif: [motif] | Contact: [phone]\"\n- Start: ISO8601 (ex: 2026-02-09T10:00:00+01:00)\n- End: Start + 30min\n\n### 4. Triage Creation Tool\n**Quand :** Patient décrit symptômes inquiétants\n\n**Symptômes déclencheurs :**\nDouleurs, fièvre, saignements, vertiges, nausées, vomissements, difficultés respiratoires, douleurs thoraciques\n\n**PROCESSUS INTELLIGENT (3-4 questions selon symptôme) :**\n\n**Pour DOULEURS (4 questions) :**\n1. Depuis quand ? → depuis_quand\n2. Intensité 1-10 ? → intensite (NUMBER)\n3. Où exactement ? → localisation\n4. Autres symptômes ? → symptomes_associes\n\n**Pour NAUSÉES/FIÈVRE/VERTIGES (3 questions, PAS d'intensité) :**\n1. Depuis quand ? → depuis_quand\n2. Fréquence/Température/Contexte ? → localisation\n3. Autres symptômes ? → symptomes_associes\n\n**PARAMÈTRES TRIAGE TOOL :**\n```javascript\n{\n  conversation_id: \"{{ $json.conversation_id }}\",\n  phone: \"{{ $json.phone }}\",\n  patient_name: \"{{ $json.patient_name }}\",\n  initial_message: \"[Premier message symptôme]\",\n  depuis_quand: \"[Durée]\",\n  intensite: [NUMBER 1-10 ou ne pas envoyer si pas douleur],\n  localisation: \"[Localisation si douleur OU fréquence/température]\",\n  symptomes_associes: \"[Description complète]\",\n  urgency: \"low\"|\"medium\"|\"high\"|\"urgent\",\n  status: \"PENDING\"\n}\n```\n\n**ÉVALUATION URGENCE :**\n| Intensité | Urgence | Délai | Action |\n|-----------|---------|-------|--------|\n| 1-3 | low | Pas urgent | Proposer RDV |\n| 4-6 | medium | 24-48h | Équipe recontactera |\n| 7-8 | high | Quelques heures | Contacte dans l'heure |\n| 9-10 | urgent | IMMÉDIAT | 🚨 APPELER 15 |\n\n**RÉPONSES SELON URGENCE :**\n\n- **urgent :** \"🚨 URGENCE VITALE 🚨\\n\\nVOS SYMPTÔMES NÉCESSITENT UNE PRISE EN CHARGE IMMÉDIATE ⚠️\\n\\n👉 APPELEZ LE 15 (SAMU) MAINTENANT 📞\\n\\nNe perdez pas de temps. Votre vie est en danger. 🚑\"\n\n- **high :** \"Vos symptômes sont préoccupants ⚠️\\n\\nNotre équipe médicale 🩺 a été alertée et vous contactera dans l'heure 📞\\n\\nSi votre état s'aggrave, appelez le 15 immédiatement 🚑\\n\\nEn attendant, restez au repos 😌\"\n\n- **medium :** \"Merci pour ces informations 📝\\n\\nNotre équipe médicale 🩺 a été notifiée et vous recontactera dans les 24 heures 📞\"\n\n- **low :** \"Merci pour ces informations 📝\\n\\nCes symptômes ne semblent pas nécessiter une prise en charge urgente 😌\"\n\n### 5. Update Conversation Tool\nSauvegarde après chaque étape importante.\n\nSteps possibles:\nINITIAL, ASK_NAME, ASK_MOTIF, ASK_DATE, PROPOSE_SLOTS, RDV_CONFIRMÉ, TRIAGE_INITIÉ, TRIAGE_ENREGISTRÉ, FAQ_RÉPONDUE\n\n## 💬 PROTOCOLE COMPLET - ⚠️ RÈGLE ABSOLUE\n\n### 🔴 RÈGLE D'OR SUPRÊME - À RESPECTER ABSOLUMENT :\n\n**SI LE PATIENT DEMANDE UN RDV + MENTIONNE DES SYMPTÔMES :**\n1. Faire le TRIAGE (3-4 questions)\n2. Enregistrer le triage (Triage Creation Tool)\n3. Informer de l'alerte médicale\n4. **TOUJOURS ENCHAÎNER AVEC LA PRISE DE RDV** ← OBLIGATOIRE\n\n**NE JAMAIS s'arrêter après le triage si le patient a demandé un RDV au départ.**\n\n---\n\n### INTENT_RDV_SIMPLE (sans symptômes)\n1. Saluer 😊\n2. Demander motif (simple, sans symptômes médicaux)\n3. Demander date 📅\n4. Calendar Availability\n5. Proposer 3 créneaux LIBRES ⏰\n6. Confirmer choix ✅\n7. Calendar Create Event\n8. Update Conversation (step: RDV_CONFIRMÉ)\n9. Confirmation finale\n\n---\n\n### INTENT_RDV_AVEC_SYMPTÔMES ⚠️ PROTOCOLE COMBINÉ OBLIGATOIRE\n\n**Déclencheur :** Patient dit \"je veux un RDV\" + mentionne symptômes (nausées, douleur, fièvre, vertiges, etc.)\n\n**PHASE 1 : TRIAGE MÉDICAL (3-4 questions)**\n\n1. Identifier le type de symptôme (douleur vs autre)\n\n2. **Dire explicitement qu'on va d'abord évaluer les symptômes :**\n   \"D'accord [Nom] 😊 Avant de prendre votre rendez-vous, j'ai besoin d'évaluer vos symptômes pour alerter notre équipe médicale si nécessaire 📝\"\n\n3. Poser les 3-4 questions adaptées\n\n4. Triage Creation Tool (attention: intensite = NUMBER ou NULL)\n\n5. Informer de l'alerte médicale selon urgency\n\n**PHASE 2 : PRISE DE RDV (OBLIGATOIRE - NE JAMAIS OUBLIER)**\n\n6. **TRANSITION OBLIGATOIRE vers la prise de RDV :**\n\n   Si urgency = \"urgent\" ou \"high\" :\n   ```\n   En parallèle de cette alerte, prenons votre rendez-vous dès que possible 📅\n   \n   Pour quelle date souhaitez-vous consulter ?\n   ```\n\n   Si urgency = \"medium\" ou \"low\" :\n   ```\n   Maintenant, prenons votre rendez-vous 📅\n   \n   Pour quelle date souhaitez-vous consulter ?\n   ```\n\n7. Demander date souhaitée\n\n8. Calendar Availability\n\n9. Proposer 3 créneaux LIBRES ⏰\n\n10. Confirmer choix ✅\n\n11. Calendar Create Event (motif doit inclure les symptômes)\n\n12. Update Conversation (step: RDV_CONFIRMÉ, motif: \"Consultation - [symptômes]\")\n\n13. **Confirmation finale complète :**\n    ```\n    Excellent ! ✅ Votre rendez-vous est confirmé 📅\n    \n    📍 Clinique Divine Miséricorde 🏥\n    📅 [Date complète]\n    ⏰ [Heure]\n    🩺 Consultation - [symptômes résumés]\n    \n    Notre équipe médicale vous contactera également suite à votre triage 📞\n    \n    À très bientôt [Nom] ! 😊\n    ```\n\n**EXEMPLE COMPLET :**\n```\nPatient : \"Je veux un RDV, j'ai des nausées depuis 2 jours\"\n\n[PHASE 1 : TRIAGE]\nAssistant : \"D'accord Samson 😊 Avant de prendre votre rendez-vous, j'ai besoin d'évaluer vos symptômes pour alerter notre équipe médicale si nécessaire 📝\\n\\nDepuis quand exactement avez-vous ces nausées ? ⏱️\"\n\nPatient : \"Depuis avant-hier\"\n\nAssistant : \"À quelle fréquence avez-vous des nausées ? Vomissez-vous ? 🤢\"\n\nPatient : \"Oui, surtout le matin\"\n\nAssistant : \"Avez-vous d'autres symptômes comme de la fièvre ? 🤒\"\n\nPatient : \"Oui un peu\"\n\n[Triage Tool appelé → urgency = medium]\n\nAssistant : \"Merci pour ces informations 📝\\n\\nNotre équipe médicale 🩺 a été notifiée et vous recontactera dans les 24 heures 📞\\n\\n[PHASE 2 : RDV - TRANSITION]\nMaintenant, prenons votre rendez-vous 📅\\n\\nPour quelle date souhaitez-vous consulter ?\"\n\nPatient : \"Demain si possible\"\n\n[Calendar Availability → retour []]\n\nAssistant : \"Parfait ! 😊 Demain est disponible.\\n\\nJe vous propose ⏰ :\\n• 09h00\\n• 11h00\\n• 14h30\\n\\nLequel vous convient ?\"\n\nPatient : \"11h\"\n\n[Calendar Create Event]\n[Update Conversation]\n\nAssistant : \"Excellent ! ✅ Votre rendez-vous est confirmé 📅\\n\\n📍 Clinique Divine Miséricorde 🏥\\n📅 Mercredi 5 février 2026\\n⏰ 11h00\\n🩺 Consultation - Nausées et fièvre\\n\\nNotre équipe médicale vous contactera également suite à votre triage 📞\\n\\nÀ très bientôt Samson ! 😊\"\n```\n\n---\n\n### INTENT_TRIAGE_SEUL (symptômes SANS demande de RDV)\n\n**Déclencheur :** Patient décrit symptômes SANS dire \"je veux un RDV\"\n\n**Processus :**\n1. Identifier symptôme\n2. Poser 3-4 questions\n3. Triage Creation Tool\n4. Informer selon urgency\n5. Conseils de confort\n6. **TOUJOURS proposer RDV à la fin :**\n   \"Souhaitez-vous prendre un rendez-vous de consultation pour ces symptômes ? 📅\"\n7. Si oui → Lancer processus RDV complet (date, créneaux, confirmation)\n\n---\n\n### INTENT_FAQ\n1. FAQ Tool avec keywords\n2. Répondre avec emojis 💙\n3. Proposer RDV si pertinent\n\n---\n\n## 🚫 SÉCURITÉ\n\n❌ NE JAMAIS:\n- Donner diagnostic\n- Recommander médicament\n- Minimiser urgence\n- S'arrêter après triage si RDV demandé au départ\n\n✅ TOUJOURS:\n- \"Seul un médecin peut diagnostiquer\" 🩺\n- Si urgence vitale: \"🚨 APPELEZ LE 15 IMMÉDIATEMENT 📞\"\n- Utiliser emojis (2-4 par message)\n- Finir la prise de RDV si le patient l'a demandé\n\n## 💬 STYLE\n- Messages courts (2-4 lignes max)\n- Emojis : 2-4 par message (médicaux + émotionnels)\n- UNE question à la fois\n- Professionnel + chaleureux\n\n## 💙 PHILOSOPHIE\n\nTu représentes une clinique moderne et humaine. Chaque interaction doit refléter professionnalisme médical 🩺, chaleur humaine 💙, efficacité organisationnelle ⚡, empathie sincère 🤗, et sécurité du patient 🛡️.\n\n**Les emojis ne sont pas optionnels - ils font partie de l'identité de la Clinique Divine Miséricorde !** 😊🏥💙\n\nFais de ton mieux pour aider chaque patient ! 🌟"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2320,
+        384
+      ],
+      "id": "7bb74399-e149-4142-8662-bd5d055c2ffa",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        752
+      ],
+      "id": "0d1faafe-8253-4200-ab69-c1a94cde623c",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "lC2IpNIo2HD0hYjf",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get many rows in Supabase pour obtenir les infos dans la table faq en fonction de la demande du patient ",
+        "operation": "get",
+        "tableId": "faq",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "answer",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Value', `Keywords to search in FAQ (comma separated)`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        768
+      ],
+      "id": "3e267c8a-3998-4ba4-87fb-a11e17515ce3",
+      "name": "FAQ Tool1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "sabigonnaguian57@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sabigonnaguian57@gmail.com"
+        },
+        "returnAll": "={{ $fromAI('Return_All', 'false pour limiter', 'boolean') }}",
+        "limit": "={{ $fromAI('Limit', 'Max 50 événements', 'number') }}",
+        "timeMin": "={{ $fromAI('After', 'ISO8601 début journée: 2026-02-10T08:00:00+01:00', 'string') }}",
+        "timeMax": "={{ $fromAI('Before', 'ISO8601 fin journée: 2026-02-10T18:00:00+01:00', 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        2176,
+        752
+      ],
+      "id": "c8994c9b-8372-4ec0-b1d6-088a3c1b11ce",
+      "name": "Calendar Availability Tool1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "I1W0uKaVADtsxitx",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "sabigonnaguian57@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ $fromAI('Start', 'ISO8601: 2026-02-10T10:00:00+01:00', 'string') }}",
+        "end": "={{ $fromAI('End', 'ISO8601: 2026-02-10T10:30:00+01:00', 'string') }}",
+        "additionalFields": {
+          "description": "={{ 'Motif: ' + $fromAI('motif', 'Motif consultation', 'string') + ' | Contact: ' + $fromAI('phone', 'Téléphone patient', 'string') }}",
+          "summary": "={{ 'RDV Médical - ' + $fromAI('patient_name', 'Nom complet patient', 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        2352,
+        752
+      ],
+      "id": "40f47c16-0cf6-46ff-b196-17bbe151ebc5",
+      "name": "Calendar Create Event Tool1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "I1W0uKaVADtsxitx",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Save medical triage case. Use when patient describes symptoms. IMPORTANT: 'intensite' is NUMBER 1-10 for PAIN only (don't send for fever/nausea/dizziness without pain). Parameters: conversation_id, phone (from context), patient_name (from context), initial_message, depuis_quand, intensite (NUMBER or don't send), localisation (location for pain OR frequency for nausea OR temperature for fever), symptomes_associes (full description), urgency (low/medium/high/urgent), status (PENDING).",
+        "tableId": "triage_cases",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $fromAI('conversation_id', 'ID conversation', 'string') }}"
+            },
+            {
+              "fieldId": "urgency",
+              "fieldValue": "={{ $fromAI('urgency', 'low/medium/high/urgent', 'string') }}"
+            },
+            {
+              "fieldId": "depuis_quand",
+              "fieldValue": "={{ $fromAI('depuis_quand', 'Durée: 2 jours, 1 semaine...', 'string') }}"
+            },
+            {
+              "fieldId": "symptomes_associes",
+              "fieldValue": "={{ $fromAI('symptomes_associes', 'Description complète symptômes', 'string') }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('Format History for AI1').item.json.phone }}"
+            },
+            {
+              "fieldId": "patient_name",
+              "fieldValue": "={{ $('Format History for AI1').item.json.patient_name }}"
+            },
+            {
+              "fieldId": "intensite",
+              "fieldValue": "={{ $fromAI('intensite', 'Intensité 1-10 NUMBER (only for pain, NULL if not pain)', 'number') }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $fromAI('status', 'PENDING par défaut', 'string') }}"
+            },
+            {
+              "fieldId": "localisation",
+              "fieldValue": "={{ $fromAI('localisation', 'Localisation douleur OU fréquence nausées OU température', 'string') }}"
+            },
+            {
+              "fieldId": "initial_message",
+              "fieldValue": "={{ $('Format History for AI1').item.json.current_message }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        736
+      ],
+      "id": "f5975359-fac9-4e9f-801e-35ccb4a8bd1d",
+      "name": "Triage Creation Tool1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Update conversation information with patient details and current step. Use this after each important step to save patient data.",
+        "operation": "update",
+        "tableId": "conversations",
+        "filterType": "string",
+        "filterString": "=id=eq.{{ $fromAI('conversation_id', 'ID de la conversation', 'string') }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient_name",
+              "fieldValue": "={{ $fromAI('patient_name', 'Nom complet du patient', 'string') }}"
+            },
+            {
+              "fieldId": "last_intent",
+              "fieldValue": "={{ $fromAI('last_intent', 'INTENT_RDV, INTENT_FAQ, ou INTENT_TRIAGE', 'string') }}"
+            },
+            {
+              "fieldId": "step",
+              "fieldValue": "={{ $fromAI('step', 'INITIAL, ASK_NAME, ASK_MOTIF, ASK_DATE, PROPOSE_SLOTS, RDV_CONFIRMÉ, etc', 'string') }}"
+            },
+            {
+              "fieldId": "date_souhaitee",
+              "fieldValue": "={{ $fromAI('date_souhaitee', 'Date souhaitée format: 2026-02-09', 'string') }}"
+            },
+            {
+              "fieldId": "motif",
+              "fieldValue": "={{ $fromAI('motif', 'Motif de consultation', 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        2768,
+        720
+      ],
+      "id": "c40ed47a-0a78-4d19-939a-8268c72d51bf",
+      "name": "Update Conversation Tool1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=983081561544380",
+        "recipientPhoneNumber": "={{ $('Format History for AI1').item.json.phone }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2672,
+        384
+      ],
+      "id": "03b4e44e-2079-4c3d-b4cc-a68ee81e4900",
+      "name": "Send WhatsApp Message1",
+      "webhookId": "auto-generated",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "XZeouCiwhxo4E8ue",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $('Format History for AI1').item.json.conversation_id }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "assistant"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $('AI Agent1').item.json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        384
+      ],
+      "id": "37f8f623-cfb3-4505-9512-2b824f2a5c48",
+      "name": "Save Assistant Response1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "24deRiWofnxVnaBh",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1104,
+        96
+      ],
+      "id": "d6c09b49-c34f-4d26-b435-527ca182bcc1",
+      "name": "Vérifier toutes les 5min"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "sabigonnaguian57@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sabigonnaguian57@gmail.com"
+        },
+        "options": {
+          "timeMin": "={{ $now.plus({ minutes: 25 }).toISO() }}",
+          "timeMax": "={{ $now.plus({ minutes: 35 }).toISO() }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [
+        -896,
+        96
+      ],
+      "id": "a43861fc-fc98-4d09-a2bb-bc7d44c2a8d3",
+      "name": "Récupérer RDV dans 25-35min",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "I1W0uKaVADtsxitx",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "has-events",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -672,
+        96
+      ],
+      "id": "8370e680-879e-466e-9fc7-e166ea013917",
+      "name": "Y a-t-il des RDV ?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pour chaque événement, extraire les infos\nconst events = $input.all();\n\nreturn events.map(event => {\n  const description = event.json.description || '';\n  \n  // Extraire le téléphone du format \"Motif: XXX | Contact: +22963845663\"\n  const phoneMatch = description.match(/Contact:\\s*([\\+\\d]+)/);\n  const phone = phoneMatch ? phoneMatch[1] : null;\n  \n  // Extraire le motif\n  const motifMatch = description.match(/Motif:\\s*([^|]+)/);\n  const motif = motifMatch ? motifMatch[1].trim() : 'Consultation';\n  \n  // Extraire le nom du patient depuis le titre \"RDV Médical - Nom Prénom\"\n  const summary = event.json.summary || '';\n  const nameMatch = summary.match(/RDV Médical - (.+)/);\n  const patientName = nameMatch ? nameMatch[1] : 'Patient';\n  \n  // Formater l'heure du RDV\n  const startTime = new Date(event.json.start.dateTime);\n  const timeString = startTime.toLocaleTimeString('fr-FR', { \n    hour: '2-digit', \n    minute: '2-digit' \n  });\n  \n  return {\n    json: {\n      event_id: event.json.id,\n      patient_name: patientName,\n      phone: phone,\n      motif: motif,\n      rdv_time: timeString,\n      rdv_datetime: event.json.start.dateTime,\n      description: description,\n      summary: summary\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        96
+      ],
+      "id": "80ae57f1-5196-4b33-b57e-b4e869fd53ec",
+      "name": "Extraire données événements"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-phone",
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        96
+      ],
+      "id": "196ff1eb-93c4-4fc5-a174-73f4c7c2677d",
+      "name": "A un téléphone ?"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=983081561544380",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "=🔔 RAPPEL DE RENDEZ-VOUS 🔔\n\nBonjour {{ $json.patient_name }} 😊\n\nVotre consultation à la Clinique Divine Miséricorde 🏥 est dans 30 minutes !\n\n📅 Aujourd'hui\n⏰ {{ $json.rdv_time }}\n🩺 {{ $json.motif }}\n\n📍 Adresse: Clinique Divine Miséricorde\n\nMerci de votre confiance 💙\n\nÀ tout de suite ! 😊",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "78a80592-30a5-4971-a44a-5b260e904540",
+      "name": "Rappel WhatsApp Patient",
+      "webhookId": "c5090f7d-9b33-4a8b-ba70-25d729c24d68",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "XZeouCiwhxo4E8ue",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=983081561544380",
+        "recipientPhoneNumber": "+22957847432",
+        "textBody": "=📋 NOTIFICATION CLINIQUE 📋\n\nRDV dans 30 minutes ⏰\n\nPatient: {{ $json.patient_name }}\nHeure: {{ $json.rdv_time }}\nMotif: {{ $json.motif }}\nTéléphone: {{ $json.phone }}\n\n🏥 Préparez la salle de consultation",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        176
+      ],
+      "id": "df6c3861-e403-4520-a873-52437aacccad",
+      "name": "Notification Clinique",
+      "webhookId": "3bef52f9-4716-4268-b878-bc223fe04930",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "XZeouCiwhxo4E8ue",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        208,
+        96
+      ],
+      "id": "7f50be61-f686-4178-9bdb-fbe1aa82d1c3",
+      "name": "Fusionner résultats"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "sabigonnaguian57@gmail.com",
+          "mode": "list",
+          "cachedResultName": "sabigonnaguian57@gmail.com"
+        },
+        "eventId": "={{ $json.event_id }}",
+        "updateFields": {
+          "description": "={{ $json.description + '\\n\\n✅ Rappel envoyé: ' + $now.toFormat('dd/MM/yyyy HH:mm') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        96
+      ],
+      "id": "fc1e0581-6244-4d10-886d-edd9d4902c6e",
+      "name": "Marquer rappel envoyé",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "I1W0uKaVADtsxitx",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Last 15 Messages": {
+      "main": [
+        [
+          {
+            "node": "Format History for AI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Fields1": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Conversation1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Conversation1": {
+      "main": [
+        [
+          {
+            "node": "Is Existing Patient?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Existing Patient?1": {
+      "main": [
+        [
+          {
+            "node": "Merge Conversations1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create New Conversation1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Conversation1": {
+      "main": [
+        [
+          {
+            "node": "Merge Conversations1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Conversations1": {
+      "main": [
+        [
+          {
+            "node": "Normalize Conversation ID1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Conversation ID1": {
+      "main": [
+        [
+          {
+            "node": "Save User Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save User Message1": {
+      "main": [
+        [
+          {
+            "node": "Get Last 15 Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format History for AI1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Availability Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Create Event Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triage Creation Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Conversation Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message1": {
+      "main": [
+        [
+          {
+            "node": "Save Assistant Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier toutes les 5min": {
+      "main": [
+        [
+          {
+            "node": "Récupérer RDV dans 25-35min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer RDV dans 25-35min": {
+      "main": [
+        [
+          {
+            "node": "Y a-t-il des RDV ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Y a-t-il des RDV ?": {
+      "main": [
+        [
+          {
+            "node": "Extraire données événements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire données événements": {
+      "main": [
+        [
+          {
+            "node": "A un téléphone ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A un téléphone ?": {
+      "main": [
+        [
+          {
+            "node": "Rappel WhatsApp Patient",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notification Clinique",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rappel WhatsApp Patient": {
+      "main": [
+        [
+          {
+            "node": "Fusionner résultats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification Clinique": {
+      "main": [
+        [
+          {
+            "node": "Fusionner résultats",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Fusionner résultats": {
+      "main": [
+        [
+          {
+            "node": "Marquer rappel envoyé",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fd9e1ce5-5845-4665-99b2-d7bf091005b4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "204fbee7fba560a0ff0a7169dc0748a53baacdffc306f42aabf7e7f20725118e"
+  },
+  "id": "RSA9OVId8i8KtD1O",
+  "tags": []
+}
