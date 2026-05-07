@@ -1,0 +1,976 @@
+{
+  "name": "Automatisation — Suivi automatique des prospects (Nurturing)",
+  "nodes": [
+    {
+      "parameters": {
+        "formId": "b5No52"
+      },
+      "type": "n8n-nodes-tallyforms.tallyTrigger",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        -368
+      ],
+      "id": "425fe5f7-3170-44e7-89f5-a81b91b7fd7b",
+      "name": "Tally Trigger",
+      "webhookId": "0a9bfe97-32a1-490e-9698-a1ae50d630ea",
+      "credentials": {
+        "tallyApi": {
+          "id": "VKIKSBLmR96qzhPQ",
+          "name": "Tally account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -368
+      ],
+      "id": "feb3da12-d11d-4f2a-b08f-0ee286036f76",
+      "name": "Wait J+2",
+      "webhookId": "wait-j2-webhook-id"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q",
+          "mode": "list",
+          "cachedResultName": "Leads qualifiés Immo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Statut",
+              "lookupValue": "={{ $json.question_oOeMbM.value }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        480,
+        -368
+      ],
+      "id": "ed02e3d2-ba13-4b1a-9b99-9865b3733fbc",
+      "name": "Vérifier statut J+2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "udxDFuI6xm8CGWPQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "check-j2",
+              "leftValue": "={{ $json.Statut }}",
+              "rightValue": "Fermé",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        752,
+        -368
+      ],
+      "id": "72a57f35-2b68-44c0-81df-775455ce863d",
+      "name": "Prospect fermé J+2 ?"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Expert en email marketing immobilier.\nRédige un email de relance chaleureux J+2 pour un prospect nommé  {{ $json[\"Nom du prospect\"] }}qui a visité  {{ $json[\"Bien visité\"] }}avec un budget de {{ $json.Budget }}FCFA.\nTon : humain, sans pression, on prend des nouvelles.\nIMPORTANT : Réponds UNIQUEMENT avec l'email.\nCommence directement par Objet : \nSans introduction, sans commentaire.\nSignature : Scale Automate— FR IMMO — +225 0163845663"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1008,
+        -352
+      ],
+      "id": "5c3e5741-e94b-4179-b709-8d8f27a757d7",
+      "name": "Gemini J+2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.item.json.content.parts[0].text;\nconst objetPatterns = [/\\*\\*Objet\\s*:\\s*(.+?)\\*\\*/, /Objet\\s*:\\s*(.+?)(?:\\n|$)/, /^Objet\\s*:\\s*(.+?)(?:\\n|$)/m];\nlet objet = \"Suivi de votre visite\";\nlet objetFullMatch = \"\";\nfor (const pattern of objetPatterns) {\n  const match = text.match(pattern);\n  if (match) { objet = match[1].trim(); objetFullMatch = match[0]; break; }\n}\nlet contenu = text;\nif (objetFullMatch) { contenu = contenu.replace(objetFullMatch, ''); }\ncontenu = contenu.replace(/\\*\\*Objet\\s*:.*?\\*\\*/g, '').replace(/^Objet\\s*:.+$/mg, '').replace(/^\\s*\\n/, '').trim();\nreturn { objet, contenu };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        -352
+      ],
+      "id": "06b3b133-92b6-45ea-bef1-fe2240d8297f",
+      "name": "Code J+2"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prospect fermé J+2 ?').item.json[\"Email du prospect \"] }}",
+        "subject": "={{ $json.objet }}",
+        "emailType": "text",
+        "message": "={{ $json.contenu }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1552,
+        -512
+      ],
+      "id": "73c571f1-16b4-4609-a215-137464033b5d",
+      "name": "Email prospect J+2",
+      "webhookId": "95eec4fb-778c-4e7f-8b83-bfde62dcc4b8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2cH3ENTdnMa6qoso",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "automatescale3@gmail.com",
+        "subject": "=🔔 Relance J+2 envoyée ",
+        "emailType": "text",
+        "message": "=Bonjour,\n\nL'email J+2 vient d'être envoyé à  {{ $('Prospect fermé J+2 ?').item.json[\"Nom du prospect\"] }}.\n\nSi ce prospect a répondu, allez dans Google Sheets et changez son statut en \"Fermé\".\n\nLien Google Sheets : https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit?hl=fr&gid=0#gid=0&range=G{{ $('Prospect fermé J+2 ?').item.json.row_number }}\nSinon le prochain email partira dans 5 jours.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1552,
+        -224
+      ],
+      "id": "42421236-5da4-4577-9e7a-92b117fb4f0f",
+      "name": "Notifier responsable J+2",
+      "webhookId": "78e985a8-1647-4c2d-8b1d-5efed55195cf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2cH3ENTdnMa6qoso",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1808,
+        -224
+      ],
+      "id": "57121e34-906d-4a37-9bc4-a8723c7567a2",
+      "name": "Wait J+7",
+      "webhookId": "wait-j7-webhook-id"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q",
+          "mode": "list",
+          "cachedResultName": "Leads qualifiés Immo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Statut",
+              "lookupValue": "={{ $('Vérifier statut J+2').itemMatching(0) .json[\"Statut\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2064,
+        -224
+      ],
+      "id": "a38ae7a4-5199-4eba-b38c-229dd5fc2d8b",
+      "name": "Vérifier statut J+7",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "udxDFuI6xm8CGWPQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "check-j7",
+              "leftValue": "={{ $json.Statut }}",
+              "rightValue": "Fermé",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2320,
+        -224
+      ],
+      "id": "0f59cfab-74f9-45cb-a578-4db94bdc6f07",
+      "name": "Prospect fermé J+7 ?"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Expert en email marketing immobilier.\nRédige un email informatif J+7 pour un prospect nommé  {{ $json[\"Nom du prospect\"] }} qui a visité  {{ $json[\"Bien visité\"] }} avec un budget de {{ $json.Budget }} FCFA.\nDonne 3 conseils pratiques pour acheter. Mentionne subtilement que le bien est toujours disponible.\nTon : expert, utile, sans pression.\nIMPORTANT : Réponds UNIQUEMENT avec l'email.\nCommence directement par Objet : \nSans introduction, sans commentaire.\nSignature :Automate Scale — FR IMMO — +225 0163845663"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2528,
+        -208
+      ],
+      "id": "debfc93a-74bc-4fce-bf93-085808c16e9c",
+      "name": "Gemini J+7",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.item.json.content.parts[0].text;\n\nconst objetPatterns = [\n  /\\*\\*Objet\\s*:\\s*(.+?)\\*\\*/,\n  /Objet\\s*:\\s*(.+?)(?:\\n|$)/,\n  /^Objet\\s*:\\s*(.+?)(?:\\n|$)/m\n];\n\nlet objet = \"Suivi de votre visite\";\nlet objetFullMatch = \"\";\n\nfor (const pattern of objetPatterns) {\n  const match = text.match(pattern);\n  if (match) {\n    objet = match[1].trim();\n    objetFullMatch = match[0];\n    break;\n  }\n}\n\nlet contenu = text;\n\n// Supprime la ligne d’objet complète\nif (objetFullMatch) {\n  contenu = contenu.replace(objetFullMatch, '');\n}\n\ncontenu = contenu\n  .replace(/\\*\\*Objet\\s*:.*?\\*\\*/g, '')\n  .replace(/^Objet\\s*:.+$/mg, '')\n  .replace(/^\\s*\\n/, '')\n  .trim();\n\n// ✅ Suppression de toutes les doubles astérisques restantes (gras Markdown)\ncontenu = contenu.replace(/\\*\\*/g, '');\n\nreturn { objet, contenu };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        -224
+      ],
+      "id": "05689e09-e453-4f57-9347-bc42de322238",
+      "name": "Code J+7"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prospect fermé J+7 ?').itemMatching(0).json['Email du prospect ']}}",
+        "subject": "={{ $json.objet }}",
+        "emailType": "text",
+        "message": "={{ $json.contenu }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3088,
+        -368
+      ],
+      "id": "5fef353f-d680-4d35-94f3-38c1a71aca00",
+      "name": "Email prospect J+7",
+      "webhookId": "a3dc192f-d9a8-4aa3-b1fa-a93806b9a814",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2cH3ENTdnMa6qoso",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "automatescale3@gmail.com",
+        "subject": "=🔔 Relance J+7 envoyée ",
+        "emailType": "text",
+        "message": "=Bonjour,\n\nL'email J+7 vient d'être envoyé à {{ $('Prospect fermé J+7 ?').itemMatching(0) .json[\"Nom du prospect\"]}} .\n\nSi ce prospect a répondu, allez dans Google Sheets et changez son statut en \"Fermé\".\n\nLien Google Sheets :https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit?hl=fr&gid=0#gid=0&range=G{{ $('Prospect fermé J+7 ?').item.json.row_number }}\n\nSinon le dernier email partira dans 7 jours.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3088,
+        -80
+      ],
+      "id": "536a95b8-a564-47d2-a34a-e8d258e5586e",
+      "name": "Notifier responsable J+7",
+      "webhookId": "8213f1fa-9805-43ab-aa51-31972e1642bc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2cH3ENTdnMa6qoso",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3344,
+        -80
+      ],
+      "id": "dcfcf0b9-28e3-4f8a-bc47-22f57b63e1df",
+      "name": "Wait J+14",
+      "webhookId": "wait-j14-webhook-id"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q",
+          "mode": "list",
+          "cachedResultName": "Leads qualifiés Immo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Statut",
+              "lookupValue": "={{ $('Vérifier statut J+7').item.json.Statut }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3600,
+        -80
+      ],
+      "id": "3ce1ce0c-9406-4837-9be6-1b7f4672a64d",
+      "name": "Vérifier statut J+14",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "udxDFuI6xm8CGWPQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "check-j14",
+              "leftValue": "={{ $json.Statut }}",
+              "rightValue": "Fermé",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3856,
+        -80
+      ],
+      "id": "2fbbff36-dd36-433b-a247-0db32ff1b68c",
+      "name": "Prospect fermé J+14 ?"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "= Expert en email marketing immobilier.\nRédige un email de dernière relance J+14 pour un prospect nommé  {{ $json[\"Nom du prospect\"] }} qui a visité  {{ $json[\"Bien visité\"] }} avec un budget de {{ $json.Budget }}FCFA.\nCrée une urgence douce : le bien attire d'autres acheteurs. Propose un appel de 10 minutes.\nTon : bienveillant mais clair.\nIMPORTANT : Réponds UNIQUEMENT avec l'email.\nCommence directement par Objet : \nSans introduction, sans commentaire.\nSignature : Automate Scale— FR IMMO — +225 0163845663"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        4064,
+        -64
+      ],
+      "id": "d68e7d96-20b9-4f50-9ee2-440a430bba18",
+      "name": "Gemini J+14",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.item.json.content.parts[0].text;\n\nconst objetPatterns = [\n  /\\*\\*Objet\\s*:\\s*(.+?)\\*\\*/,\n  /Objet\\s*:\\s*(.+?)(?:\\n|$)/,\n  /^Objet\\s*:\\s*(.+?)(?:\\n|$)/m\n];\n\nlet objet = \"Suivi de votre visite\";\nlet objetFullMatch = \"\";\n\nfor (const pattern of objetPatterns) {\n  const match = text.match(pattern);\n  if (match) {\n    objet = match[1].trim();\n    objetFullMatch = match[0];\n    break;\n  }\n}\n\nlet contenu = text;\n\n// Supprime la ligne d’objet complète\nif (objetFullMatch) {\n  contenu = contenu.replace(objetFullMatch, '');\n}\n\ncontenu = contenu\n  .replace(/\\*\\*Objet\\s*:.*?\\*\\*/g, '')\n  .replace(/^Objet\\s*:.+$/mg, '')\n  .replace(/^\\s*\\n/, '')\n  .trim();\n\n// ✅ Suppression de toutes les doubles astérisques restantes (gras Markdown)\ncontenu = contenu.replace(/\\*\\*/g, '');\n\nreturn { objet, contenu };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4368,
+        -80
+      ],
+      "id": "7ef4bc38-eac1-44ec-ae77-058efe7d7e3d",
+      "name": "Code J+14"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prospect fermé J+14 ?') .itemMatching(0) .json['Email du prospect ']}}",
+        "subject": "={{ $json.objet }}",
+        "emailType": "text",
+        "message": "={{ $json.contenu }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        4624,
+        -224
+      ],
+      "id": "6b8bb8a9-d76e-4183-bbb9-cf700c4817d6",
+      "name": "Email prospect J+14",
+      "webhookId": "9f2ed027-2392-4186-a69d-8daadfd3e2a8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2cH3ENTdnMa6qoso",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "automatescale3@gmail.com",
+        "subject": "=✅ Dernière relance J+14 envoyée ",
+        "emailType": "text",
+        "message": "=Bonjour,\n\nL'email de dernière relance J+14 vient d'être envoyé à {{ $('Prospect fermé J+7 ?').itemMatching(0) .json[\"Nom du prospect\"]}}.\n\nC'est la dernière relance automatique. Si aucune réponse, ce prospect peut être archivé dans Google Sheets.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        4624,
+        64
+      ],
+      "id": "0586ae34-82da-4ff3-9ff0-40eec517c773",
+      "name": "Notifier responsable J+14",
+      "webhookId": "ae5c7ab0-e99e-43b6-9804-2f3d94514120",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2cH3ENTdnMa6qoso",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q",
+          "mode": "list",
+          "cachedResultName": "Leads qualifiés Immo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nom du prospect": "={{ $json.question_Yd0W50.value }}",
+            "Téléphone 📱": "={{ $json.question_lRedb6.value }}",
+            "Email du prospect ": "={{ $json.question_Dekd4p.value }}",
+            "Budget": "={{ $json.question_RLM5GP.value }}",
+            "Bien visité": "={{ $json.question_4jJxao.value }}",
+            "Date de visite": "={{ $json.question_G09dxz.value }}",
+            "Statut": "={{ $json.question_oOeMbM.value }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nom du prospect",
+              "displayName": "Nom du prospect",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email du prospect ",
+              "displayName": "Email du prospect ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Téléphone 📱",
+              "displayName": "Téléphone 📱",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bien visité",
+              "displayName": "Bien visité",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date de visite",
+              "displayName": "Date de visite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Statut",
+              "displayName": "Statut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -272,
+        -368
+      ],
+      "id": "ad1c6d61-65f9-4703-9916-6c7ad1875875",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "udxDFuI6xm8CGWPQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3a7ce760-f957-426f-9be0-b8a89ceace50",
+              "leftValue": "={{ $json.question_oOeMbM.value }}",
+              "rightValue": "Réfléchi",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -64,
+        -368
+      ],
+      "id": "0388e231-0f31-464c-a058-de32829234c4",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tally Trigger": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait J+2": {
+      "main": [
+        [
+          {
+            "node": "Vérifier statut J+2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier statut J+2": {
+      "main": [
+        [
+          {
+            "node": "Prospect fermé J+2 ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prospect fermé J+2 ?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Gemini J+2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini J+2": {
+      "main": [
+        [
+          {
+            "node": "Code J+2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code J+2": {
+      "main": [
+        [
+          {
+            "node": "Email prospect J+2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notifier responsable J+2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifier responsable J+2": {
+      "main": [
+        [
+          {
+            "node": "Wait J+7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait J+7": {
+      "main": [
+        [
+          {
+            "node": "Vérifier statut J+7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier statut J+7": {
+      "main": [
+        [
+          {
+            "node": "Prospect fermé J+7 ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prospect fermé J+7 ?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Gemini J+7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini J+7": {
+      "main": [
+        [
+          {
+            "node": "Code J+7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code J+7": {
+      "main": [
+        [
+          {
+            "node": "Email prospect J+7",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notifier responsable J+7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifier responsable J+7": {
+      "main": [
+        [
+          {
+            "node": "Wait J+14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait J+14": {
+      "main": [
+        [
+          {
+            "node": "Vérifier statut J+14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier statut J+14": {
+      "main": [
+        [
+          {
+            "node": "Prospect fermé J+14 ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prospect fermé J+14 ?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Gemini J+14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini J+14": {
+      "main": [
+        [
+          {
+            "node": "Code J+14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code J+14": {
+      "main": [
+        [
+          {
+            "node": "Email prospect J+14",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notifier responsable J+14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait J+2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "755f73bc-e6a8-4d23-a514-d47d5264aee3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e1c0abac28a4462944fe8f3edbe6bef193f5c76ee551c9641b0291f97a50b7e2"
+  },
+  "id": "Ewbs3PdvY9xGEmfq",
+  "tags": []
+}
