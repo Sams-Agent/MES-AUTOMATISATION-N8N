@@ -1,0 +1,1104 @@
+{
+  "name": "Agent de Qualification Leads Immobilier",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2000,
+        176
+      ],
+      "id": "a0688d3a-e8e6-4add-b9f4-5c413ec614d1",
+      "name": "OpenAI GPT-4o",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "1cdc385e-6022-4562-bce4-5b36fe03cea9",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3536,
+        -272
+      ],
+      "id": "7a3ac620-847f-4a7d-ac66-5fda17967420",
+      "name": "Webhook1",
+      "webhookId": "1cdc385e-6022-4562-bce4-5b36fe03cea9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f6f1f591-7067-421a-9dea-ecee7b776115",
+              "leftValue": "={{ $json.body.messages[0].from_me.toBoolean() }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        -3328,
+        -272
+      ],
+      "id": "71591d89-14c5-480e-97e3-fde2f0fa454f",
+      "name": "Filter1"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://gate.whapi.cloud/messages/{{ $json.body.messages[0].id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer m9R3X8VGq6jIjwG2LUYi7HxVmkTuPVFf"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3120,
+        -272
+      ],
+      "id": "2aad53a6-071b-428f-8600-cfc9aea3d9fa",
+      "name": "Marquage message lu1"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://gate.whapi.cloud/presences/{{ $('Filter1').item.json.body.messages[0].chat_id.split('@')[0] }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer m9R3X8VGq6jIjwG2LUYi7HxVmkTuPVFf"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"presence\": \"typing\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2928,
+        -272
+      ],
+      "id": "93f01359-3eea-48a5-ab59-99a7f7605bf3",
+      "name": "Marquage en train d'écrire1",
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Webhook1').item.json.body.messages[0].type }}",
+                    "rightValue": "voice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a0a49c40-6912-4dea-92f8-58b51eaefc4a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AUDIO"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9fe78f97-aea6-4aa4-9323-513a682f2f2d",
+                    "leftValue": "={{ $('Webhook1').item.json.body.messages[0].type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "TEXT"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6ae68d41-e4de-4efd-8770-fbd688f68daa",
+                    "leftValue": "={{ $('Webhook1').item.json.body.messages[0].type }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IMAGE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2736,
+        -288
+      ],
+      "id": "a6296c9e-8262-4476-8663-e51a80193b75",
+      "name": "ROUTER VERS LE TYPE DE MESSAGE1"
+    },
+    {
+      "parameters": {
+        "url": "=https://gate.whapi.cloud/media/{{ $('Webhook1').item.json.body.messages[0].voice.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer m9R3X8VGq6jIjwG2LUYi7HxVmkTuPVFf"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2480,
+        -352
+      ],
+      "id": "0f772fa2-5be8-4a5d-a981-f0561bd826f9",
+      "name": "Télecharger audio1"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "fr"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -2256,
+        -352
+      ],
+      "id": "0c3ab6a2-93d4-49b0-83ea-963fe0ee1a50",
+      "name": "Transcribe a recording1",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcription = $input.first().json.text || '';\nreturn [{ json: { message_client: transcription } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        -352
+      ],
+      "id": "3e0c1a61-3b45-476e-a48a-ab6ce6fa512e",
+      "name": "Préparer message audio1"
+    },
+    {
+      "parameters": {
+        "url": "=https://gate.whapi.cloud/media/{{ $('Webhook1').item.json.body.messages[0].image.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer m9R3X8VGq6jIjwG2LUYi7HxVmkTuPVFf"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2480,
+        16
+      ],
+      "id": "068a4666-165e-45ec-81eb-0d51a4c3aefd",
+      "name": "Télécharger l'image1"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "Analyse l'image reçu dans les moindres détails avec une précision chirurgicale puis sort une description complète de ce que tu vois ",
+        "inputType": "base64",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -2272,
+        16
+      ],
+      "id": "755f7168-8c89-4ce8-ace8-06ef55cf6987",
+      "name": "Analyze image1",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const analyse = $input.first().json?.choices?.[0]?.message?.content\n             || $input.first().json?.content?.[0]?.text\n             || '';\nreturn [{ json: { message_client: '[Image reçue] ' + analyse } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2096,
+        0
+      ],
+      "id": "9df58682-510b-4aef-9f01-fb949d73e774",
+      "name": "Préparer message image1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1cb5a46f-83d7-43d3-8a45-cca8e0c9b444",
+              "name": "message_client",
+              "value": "={{ $('Webhook1').item.json.body.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "7ea2bf72-bd22-4223-832a-897cd831ee82",
+              "name": "numero",
+              "value": "={{ $('Webhook1').item.json.body.messages[0].from }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2480,
+        -192
+      ],
+      "id": "d90cb516-963f-4c81-bb6e-8a4a4dadba79",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message_client ?? '' }}",
+        "options": {
+          "systemMessage": "=IDENTITÉ\nTu es \"Sarah\", conseillère virtuelle d'Elite Immo.\nTon ton : chaleureux, professionnel, concierge 5 étoiles.\nUNE SEULE question par message. 2 phrases maximum (hors présentation initiale).\n\n⚠️ RÈGLE ABSOLUE — NE JAMAIS HALLUCINER\nTu ne dois JAMAIS inventer, imaginer ou décrire un bien immobilier de ta propre initiative.\nTu DOIS appeler l'outil \"Recherche catalogue NocoDB\" dès que tu as les 3 critères.\nSi l'outil n'a pas encore été appelé = aucune description de bien n'est permise.\nSi l'outil retourne un résultat = présente UNIQUEMENT ce que l'outil a retourné, mot pour mot.\n\nÉTAPE 1 — ACCUEIL\nSouhaite la bienvenue et pose uniquement cette question :\n\"Vous souhaitez acheter ou louer un bien ?\"\n\nÉTAPE 2 — COLLECTE (une question à la fois, dans cet ordre)\nType de bien : \"Villa\", \"Appartement\" ou \"Terrain\" ?\n\nZone ou quartier souhaité ?\n\nBudget maximum en FCFA ?\nRègle de conversion (entier pur sans espaces ni symboles) :\n\"2M\" → 2000000 | \"500K\" → 500000 | \"150 000 FCFA\" → 150000 | \"2000000 FCFA\" → 2000000 |\n\nÉTAPE 3 — RECHERCHE CATALOGUE (APPEL OUTIL OBLIGATOIRE)\nDès que les 3 critères sont collectés, appelle IMMÉDIATEMENT l'outil \"Recherche catalogue NocoDB\".\n\nSI le résultat est vide :\n\"Je n'ai pas de [Type_Bien] disponible à [Zone] pour ce budget. Souhaitez-vous ajuster le budget ou chercher dans une autre zone ?\"\n\nSI le résultat contient au moins un bien, présente-le EXACTEMENT ainsi :\n\n\"[Accroche enthousiaste] ! Voici ce que j'ai trouvé :\n\n🏡 [valeur du champ Titre]\n📍 Zone : [valeur du champ Zone]\n💰 Prix : [valeur du champ Prix_CFA formatée] FCFA\n📝 [valeur du champ Description]\n\nCela correspond à votre recherche ?\"\n\nOBLIGATOIRE : Sur des lignes séparées à la fin de ton message, écris EXACTEMENT ceci, en remplaçant par les valeurs retournées par l'outil :\nIMAGE_PRIVEE: [Insérer ici uniquement l'URL directe du champ Photo_Interne[0].url]\nID_BIEN: [Insérer ici uniquement la valeur du champ ID]\n\nÉTAPE 4 — FINALISATION\nDemande le nom complet du prospect.\n\nAppelle l'outil \"Append row in sheet in Google Sheets\" avec tous les champs collectés.\n\nEnvoie : \"Merci [Prénom] ! 🏠 Votre dossier est transmis à notre équipe. Belle journée !\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1888,
+        -192
+      ],
+      "id": "b7a6fabc-a79e-4f75-8b71-9cc158be235d",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook1').item.json.body.messages[0].chat_id }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -1840,
+        192
+      ],
+      "id": "59eafdea-486a-4433-a7f5-abdf5369b55b",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Recherche des biens immobiliers dans le catalogue NocoDB. Appelle cet outil dès que tu as collecté le Type_Bien, la Zone et le budget_max. Paramètres requis : Type_Bien (Villa/Appartement/Terrain), Zone (nom du quartier), budget_max (entier en FCFA). Retourne les propriétés disponibles avec Titre, Zone, Prix_CFA, Description et Photo_Interne.",
+        "url": "=https://app.nocodb.com/api/v2/tables/m0i25r70tmml2sa/records?where=(Type_Bien,eq,{{ $fromAI('Type_Bien') }})~and(Zone,like,%{{ $fromAI('Zone') }}%)~and(Prix_CFA,lte,{{ $fromAI('budget_max') }})&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer nc_pat_RFGzmELRC67gvuCHFXFvKlbKTpxtWK8dG3PJ-sCx"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        -1712,
+        176
+      ],
+      "id": "2d231079-1d57-4ec9-8118-e69328e988b3",
+      "name": "Recherche catalogue NocoDB1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q",
+          "mode": "list",
+          "cachedResultName": "Leads qualifiés Immo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2091944361,
+          "mode": "list",
+          "cachedResultName": "Feuille 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1eH7aNBtfIsA5xzhY55IdO2XtWCu8v_j_rihvo4RLq_Q/edit#gid=2091944361"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nom du Prospect": "={{ $fromAI('Nom_du_Prospect', '', 'string') }}",
+            "Numéro WhatsApp (ID)": "={{ $fromAI('Num_ro_WhatsApp__ID_', '', 'string') }}",
+            "Type de Projet": "={{ $fromAI('Type_de_Projet', '', 'string') }}",
+            "Budget": "={{ $fromAI('Budget', '', 'string') }}",
+            "Statut de qualification": "={{ $fromAI('Statut_de_qualification', '', 'string') }}",
+            "Localisation cible": "={{ $fromAI('Localisation_cible', '', 'string') }}",
+            "Date d'entrée": "={{ $fromAI('Date_d_entr_e', '', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date d'entrée",
+              "displayName": "Date d'entrée",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nom du Prospect",
+              "displayName": "Nom du Prospect",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Numéro WhatsApp (ID)",
+              "displayName": "Numéro WhatsApp (ID)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Type de Projet",
+              "displayName": "Type de Projet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Localisation cible",
+              "displayName": "Localisation cible",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Statut de qualification",
+              "displayName": "Statut de qualification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -1568,
+        160
+      ],
+      "id": "41c78c96-c893-4ab3-8616-747718a3c8ef",
+      "name": "Append row in sheet in Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "udxDFuI6xm8CGWPQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -480,
+        -176
+      ],
+      "id": "9ae6764d-4017-4116-8513-8e0b582d621c",
+      "name": "Wait1",
+      "webhookId": "ca2a0328-204b-4b29-b21b-261ba3f1b21b"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "texte",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "rule-text"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Message  simple"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "36e3799f-d828-46e9-99d8-2965c9f82eb5",
+                    "leftValue": "={{ $json.message_type }}",
+                    "rightValue": "media",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Message avec image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1344,
+        -192
+      ],
+      "id": "3a9558ac-f397-4d9b-a744-5ace6a47d94b",
+      "name": "Router réponse1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gate.whapi.cloud/messages/text",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $json.to }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -992,
+        -512
+      ],
+      "id": "c0f558e6-de96-48f2-949b-e1fa753827fa",
+      "name": "Envoi message texte1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "w6WJJNAOsIPimAas",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gate.whapi.cloud/messages/image",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $('Parser réponse agent').first().json.to }}\",\n  \"media\": \"{{ $json.secure_url }}\",\n \"caption\": {{ JSON.stringify($('Parser réponse agent').first().json.text) }},\n  \"type\": \"image\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -272,
+        -176
+      ],
+      "id": "6080db94-a294-476c-8c42-e7617042ac46",
+      "name": "Envoi image bien1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "w6WJJNAOsIPimAas",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "💡 Le problème : L'URL \"S3\" sécurisée\nL'URL provenant de NocoDB pointait vers un stockage Amazon S3 privé. Cette URL contient une signature temporaire et des permissions qui n'appartiennent qu'au serveur NocoDB.\n\nPourquoi Cloudinary échouait : Quand tu envoyais l'URL à Cloudinary, il essayait de la télécharger comme un visiteur externe. Or, Amazon S3 rejetait Cloudinary (erreur 403/400) car il n'avait pas les \"clés\" d'accès nécessaires pour accéder à ce fichier privé.\n\n🛠️ Le contournement : \"Le pont n8n\"\nAu lieu de laisser Cloudinary gérer le téléchargement, on a forcé n8n à agir comme intermédiaire de confiance.\n\nL'extraction du Hash (L'empreinte du fichier) :\nAu lieu de manipuler une URL opaque, on a extrait le hash (l'ID unique du fichier dans NocoDB) à partir du chemin de l'URL.\n\nLa récupération authentifiée (Le nœud NocoDB) :\nOn a utilisé le nœud officiel NocoDB dans n8n. Contrairement à un simple HTTP Request, ce nœud possède tes identifiants (API Token). Il a pu s'authentifier auprès de la base de données et télécharger physiquement le fichier dans la mémoire vive de n8n.\n\nLe transfert en flux (Binaire vers Cloudinary) :\nUne fois le fichier \"dans les mains\" de n8n sous forme binaire, on a envoyé ce flux directement à Cloudinary. Cloudinary a alors reçu le fichier comme s'il était envoyé depuis un ordinateur local.\n\nLa génération du lien public :\nCloudinary a stocké ce fichier sur ses serveurs publics et t'a renvoyé une URL standard, désormais accessible par n'importe qui (ton client WhatsApp, ton navigateur, etc.).\n\n📝 Résumé pour le futur :\nRègle d'or : Si un service (Cloudinary, WhatsApp) refuse une URL de fichier issue d'une base de données, c'est que l'URL est privée.\nSolution : Ne passe jamais l'URL. Télécharge le fichier binairement via l'API officielle du fournisseur (nœud NocoDB natif), puis transmets le contenu binaire au service cible."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1536,
+        -448
+      ],
+      "typeVersion": 1,
+      "id": "0431edb5-80a3-415a-a7d1-cd267e519d43",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "waygfd01",
+        "projectId": "pkk6qrvzmhmvbfg",
+        "table": "m0i25r70tmml2sa",
+        "options": {
+          "fields": [],
+          "where": "=(ID,eq,{{ $json.id_nocodb }})"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1008,
+        -176
+      ],
+      "id": "8187f592-b360-48ec-8658-be2de2b5ad8d",
+      "name": "Otenir les URls du produits via nocodb",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "le8LuX1ewOXBWq9K",
+          "name": "NocoDB Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.Photo_Interne[0].thumbnails.card_cover.signedUrl }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -176
+      ],
+      "id": "0928668f-bd12-483b-9cd7-3edb2c3263ce",
+      "name": "Obtenir un lien publique",
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "RFQjr1mfOgU43C23",
+          "name": "Cloudinary account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Une fois que l'agent a donner  urls de l'image du produit et l'ID , il faut donc aller chercher les infos du produits dans la ligne exacte afin de trouver un url nonn securisée que CLOUDINARY peut utiliser pour rendre public .  Alors pour bien cibler on filtre sa recherche avec \"(ID,eq,{{ $json.id_nocodb }})\" ; ID pour le numero de la colonne .En resumé En utilisant (ID,eq,{{ $json.id_nocodb }}), tu as forcé le nœud à regarder spécifiquement la colonne nommée ID (celle qui contient \"002\") et à chercher une correspondance exacte."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1040,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "983140da-1b3a-4b9e-a71e-68d21e8c9e02",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Récupère le texte brut de l'agent\nconst rawContent = items[0].json.output;\n\n// 1. Extraction via regex\nconst urlMatch = rawContent.match(/IMAGE_PRIVEE: (https:\\/\\/[^\\s]+)/);\nconst idMatch = rawContent.match(/ID_BIEN: ([^\\s]+)/);\n\nconst imageUrl = urlMatch ? urlMatch[1] : null;\nconst idBien = idMatch ? idMatch[1] : null;\n\n// 2. Nettoyage approfondi du texte\nlet cleanText = rawContent\n  // Supprime les balises techniques\n  .replace(/IMAGE_PRIVEE: https:\\/\\/[^\\s]+/, '')\n  .replace(/ID_BIEN: [^\\s]+/, '')\n  // Nettoie les caractères d'échappement (slashs, retours à la ligne inutiles)\n  .replace(/\\\\/g, '')      // Supprime les backslashes\n  .replace(/\\n\\s*\\n/g, '\\n\\n') // Harmonise les sauts de ligne\n  .trim();\n\n// 3. Création de l'objet unique\nconst resultObject = {\n  text: cleanText,\n  image_url: imageUrl,\n  id_nocodb: idBien,\n  chat_id: items[0].json.chat_id || \"22963845663@s.whatsapp.net\",\n  to: items[0].json.to || \"22963845663\",\n  message_type: imageUrl ? \"media\" : \"text\"\n};\n\nreturn [{ json: resultObject }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1568,
+        -192
+      ],
+      "id": "cbaa3dec-ab4d-4b51-ae9d-d1b5ec4f4e25",
+      "name": "Parser réponse agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI GPT-4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Filter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter1": {
+      "main": [
+        [
+          {
+            "node": "Marquage message lu1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marquage message lu1": {
+      "main": [
+        [
+          {
+            "node": "Marquage en train d'écrire1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marquage en train d'écrire1": {
+      "main": [
+        [
+          {
+            "node": "ROUTER VERS LE TYPE DE MESSAGE1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ROUTER VERS LE TYPE DE MESSAGE1": {
+      "main": [
+        [
+          {
+            "node": "Télecharger audio1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Télécharger l'image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Télecharger audio1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording1": {
+      "main": [
+        [
+          {
+            "node": "Préparer message audio1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer message audio1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Télécharger l'image1": {
+      "main": [
+        [
+          {
+            "node": "Analyze image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image1": {
+      "main": [
+        [
+          {
+            "node": "Préparer message image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer message image1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Parser réponse agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recherche catalogue NocoDB1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Envoi image bien1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router réponse1": {
+      "main": [
+        [
+          {
+            "node": "Envoi message texte1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Otenir les URls du produits via nocodb",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Otenir les URls du produits via nocodb": {
+      "main": [
+        [
+          {
+            "node": "Obtenir un lien publique",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtenir un lien publique": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser réponse agent": {
+      "main": [
+        [
+          {
+            "node": "Router réponse1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5f730106-f660-4a81-b115-a0fd0c062bf3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e1c0abac28a4462944fe8f3edbe6bef193f5c76ee551c9641b0291f97a50b7e2"
+  },
+  "id": "TC66I50Z2LqfRdVw",
+  "tags": []
+}
