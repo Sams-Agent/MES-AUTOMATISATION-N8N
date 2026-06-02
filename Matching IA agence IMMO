@@ -1,0 +1,214 @@
+{
+  "name": "Matching",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 1. Récupérer les données réelles du déclencheur Tally via la syntaxe correcte n8n\nconst tallyData = $('Declencheur').first().json;\n\n// Extraction propre des champs du nouveau bien via leurs clés Tally uniques\nconst newProperty = {\n  type: tallyData.question_DeGyl5?.value || \"Non spécifié\",\n  city: tallyData.question_lREZPW?.value || \"Non spécifié\",\n  surface: tallyData.question_RL9l7J?.value || \"Non spécifié\",\n  rooms: tallyData.question_oOjQ4V?.value || 0,\n  price: tallyData.question_G0Py2o?.value || 0,\n  strongPoints: tallyData.question_O0NyW8?.value || \"Non spécifié\",\n  availableFrom: tallyData.question_V86ykv?.value || \"Non spécifié\"\n};\n\n// 2. Récupérer la liste des acheteurs (provenant du nœud Google Sheets actuel qui est le parent direct)\nconst buyers = items.map(item => item.json);\n\n// 3. Formater la liste des acheteurs en texte structuré pour le prompt de l'IA\nlet buyersListText = \"\";\nbuyers.forEach((buyer, index) => {\n  // Prise en compte de l'espace potentiel dans la clé \"Nom \" de ton Google Sheets\n  const buyerName = buyer[\"Nom \"] || buyer[\"Nom\"] || 'Inconnu';\n  \n  buyersListText += `Acheteur #${index + 1}:\\n`;\n  buyersListText += `- Nom : ${buyerName}\\n`;\n  buyersListText += `- Email : ${buyer[\"Email\"] || 'N/A'}\\n`;\n  buyersListText += `- Ville souhaitée : ${buyer[\"Ville souhaitée\"] || 'N/A'}\\n`;\n  buyersListText += `- Type souhaité : ${buyer[\"Type souhaité\"] || 'N/A'}\\n`;\n  buyersListText += `- Budget Max : ${buyer[\"Budget Max\"] || '0'} FCFA\\n`;\n  buyersListText += `- Pièces min : ${buyer[\"Pieces min\"] || '0'}\\n`;\n  buyersListText += `- Surface min (m²) : ${buyer[\"Surface (m²)\"] || 'N/A'}\\n`;\n  buyersListText += `- Statut : ${buyer[\"Statut\"]?.trim() || 'N/A'}\\n`;\n  buyersListText += `---------------------------\\n`;\n});\n\n// 4. Retourner l'objet combiné pour le nœud Gemini suivant\nreturn [\n  {\n    json: {\n      matchContext: {\n        property: newProperty,\n        buyersRawList: buyersListText\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        -64
+      ],
+      "id": "9256d6ca-46cb-436f-b75d-664b67ec5691",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Tu es un agent IA expert en immobilier pour l'agence Scale IMMO. Ton objectif est de faire du matching ultra-rapide entre un nouveau bien et notre base d'acheteurs en attente.\n\nVoici les détails du NOUVEAU BIEN qui vient d'entrer :\n- Type de bien : {{ $json.matchContext.property.type }}\n- Ville/Quartier : {{ $json.matchContext.property.city }}\n- Surface : {{ $json.matchContext.property.surface }} m²\n- Nombre de pièces : {{ $json.matchContext.property.rooms }}\n- Prix du bien : {{ $json.matchContext.property.price }} FCFA\n- Points forts : {{ $json.matchContext.property.strongPoints }}\n- Disponible depuis : {{ $json.matchContext.property.availableFrom }}\n\nVoici la LISTE DES ACHETEURS en attente dans notre base de données :\n{{ $json.matchContext.buyersRawList }}\n\nMISSIONS :\n1. Analyse la liste et identifie TOUS les acheteurs qui correspondent parfaitement ou presque aux critères du bien (La ville doit correspondre, le type doit correspondre, et le prix du bien doit être inférieur ou égal au Budget Max de l'acheteur).\n2. Pour chaque acheteur qualifié trouvé (comme GONNAGUIAN Samson ici), rédige un email d'approche personnalisé, percutant et professionnel. Utilise les \"Points forts\" du bien pour lui donner envie de visiter immédiatement. Le ton doit être direct et exclusif (\"Un bien vient de rentrer, j'ai pensé à vous avant de le publier...\").\n3. Génère ta réponse au format JSON strict pour que je puisse l'exploiter dans le reste du workflow.\n\nFormat de réponse attendu (JSON) :\n[\n  {\n    \"email\": \"email_de_l_acheteur\",\n    \"sujet\": \"Sujet de l'email accrocheur\",\n    \"corps_email\": \"Bonjour [Nom]...\\n\\nCordialement L'equipe Scale IMMO +229 0163845663\n.\"\n  }\n]"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        -64
+      ],
+      "id": "def47ec3-3111-4eb7-91a7-ef579f47577e",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Récupérer le texte brut généré par le nœud Gemini\nconst rawText = items[0].json.content.parts[0].text;\n\n// 2. Nettoyer le texte si l'IA a inclus des balises de code Markdown ```json ... ```\nlet cleanedText = rawText.trim();\nif (cleanedText.startsWith(\"```\")) {\n  cleanedText = cleanedText.replace(/^```json\\s*/i, \"\").replace(/```$/, \"\").trim();\n}\n\ntry {\n  // 3. Convertir la chaîne nettoyée en un vrai tableau/objet JSON\n  const emailDataArray = JSON.parse(cleanedText);\n  \n  // On prend le premier élément du tableau d'emails généré\n  const emailData = emailDataArray[0];\n\n  // 4. Retourner les éléments séparés pour le nœud Gmail\n  return [\n    {\n      json: {\n        destinataire: emailData.email,\n        sujet: emailData.sujet,\n        corps_email: emailData.corps_email\n      }\n    }\n  ];\n\n} catch (error) {\n  // En cas d'erreur de parsing (si l'IA a renvoyé un texte mal formaté)\n  return [\n    {\n      json: {\n        error: \"Impossible de parser le JSON de Gemini\",\n        rawText: rawText\n      }\n    }\n  ];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        -64
+      ],
+      "id": "c294c656-a017-43e3-8afe-73b0e67cda04",
+      "name": "Separer objet et le contenu"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.destinataire }}",
+        "subject": "={{ $json.sujet }}",
+        "emailType": "text",
+        "message": "={{ $json.corps_email }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        -64
+      ],
+      "id": "471ca2a9-b1e3-4b08-8616-ede50102c0f1",
+      "name": "Send a message",
+      "webhookId": "2b6b885b-f656-4136-b01a-05d2e55c1b80",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formId": "9qM56Y"
+      },
+      "type": "n8n-nodes-tallyforms.tallyTrigger",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -64
+      ],
+      "id": "1f7286ec-acfb-4c77-a66c-64ed66eb641a",
+      "name": "Declencheur",
+      "webhookId": "e28cda54-e85d-4bc0-be2d-9ade771c5660",
+      "credentials": {
+        "tallyApi": {
+          "id": "QdEQQzDAILGVxPXQ",
+          "name": "Tally account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1tkqauLEWmRdM0LFdp9trL32T17WROGKOZ0SyawkbNbg",
+          "mode": "list",
+          "cachedResultName": "Suivi de prospects",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tkqauLEWmRdM0LFdp9trL32T17WROGKOZ0SyawkbNbg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1431439016,
+          "mode": "list",
+          "cachedResultName": "Feuille 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tkqauLEWmRdM0LFdp9trL32T17WROGKOZ0SyawkbNbg/edit#gid=1431439016"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -656,
+        -64
+      ],
+      "id": "6672c5e5-eb1c-415c-96a6-4fac29a6db80",
+      "name": "Obtenir le prospect en attente",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Iu25ZCHlM5E8Yxe0",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Separer objet et le contenu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separer objet et le contenu": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Declencheur": {
+      "main": [
+        [
+          {
+            "node": "Obtenir le prospect en attente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtenir le prospect en attente": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "96c03174-48e2-4c83-9c1b-e39632072ebf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "31605c47dee165aba28607488867dc602ee0c71b111a24ff4c93bf858764abde"
+  },
+  "id": "UJ6RTubQIgJs25o8",
+  "tags": []
+}
