@@ -1,0 +1,1222 @@
+{
+  "name": "Réception et traitement des CVs",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1392,
+        -64
+      ],
+      "id": "54ba8236-a21d-421a-8862-d03b7824ea3b",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d274cc84-8140-4a90-8ae0-e62c95040da1",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "4360f965-d41e-4db2-b3be-2e377a74e40e",
+              "name": "nom du candidat",
+              "value": "={{ $('Gmail Trigger').item.json.from.value[0].name }}",
+              "type": "string"
+            },
+            {
+              "id": "bab89917-59d9-4aef-8e72-e8e085f83fa7",
+              "name": "email",
+              "value": "={{ $('Gmail Trigger').item.json.from.value[0].address }}",
+              "type": "string"
+            },
+            {
+              "id": "f1d26df3-6b0d-4f7d-81e9-5de803135800",
+              "name": "Objet",
+              "value": "={{ $('Gmail Trigger').item.json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "305b55fa-4f63-471d-9ead-d7ec1c40e8bb",
+              "name": "Contenu de l'email",
+              "value": "={{ $('Gmail Trigger').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -736,
+        48
+      ],
+      "id": "fe7b848f-be73-42ce-887b-3c39ecdfcd6e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Tu es un expert en gestion des candidatures reçues lors des recrutements pour un cabinet RH.\n\nROLE: Rédiger un e-mail de confirmation suite à une candidature reçue.\n\nCONSIGNE: Tu dois analyser le profil de chaque candidat en regardant son CV pour voir ses compétences et expériences, puis l'enrichir avec sa lettre de motivation (ou le corps de son e-mail) afin de rédiger un e-mail de réponse personnalisé. Finalement, rassure le candidat en lui indiquant que sa candidature sera transmise aux recruteurs et qu'il sera rappelé pour un entretien si son profil les a convaincus. Insiste sur les points forts que tu as détectés dans son CV en rapport avec le poste.\n\nVoici les données dynamiques du candidat à utiliser pour personnaliser ton e-mail :\n\n1. INFORMATIONS DU POSTE :\n- Poste visé : {{ $('Code in JavaScript').item.json.Poste }}\n- Compétences requises : {{ $('Code in JavaScript').item.json[\"Compétences réquises\"] }}\n- Expériences attendues : {{ $('Code in JavaScript').item.json.Experiences }}\n\n2. LETTRE DE MOTIVATION :\n{{ $('Edit Fields').item.json[\"Contenu de l'email\"] }}\n\n3. TEXTE DU CV :\n{{ $('Edit Fields').item.json.text }}\nGénère uniquement le texte de l'e-mail de réponse à envoyer au candidat, de manière professionnelle et chaleureuse avec le nom du cabinet RH qui est RECRUTOS et son numero +2290163845663"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        384,
+        48
+      ],
+      "id": "02096117-84bb-4505-a41d-ce904814a3ce",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2890b9d8-5abe-4256-a77d-dfc5c7fc99cc",
+              "leftValue": "={{ Object.keys($binary || {}).length === 0 }}",
+              "rightValue": "CV",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1200,
+        -64
+      ],
+      "id": "e4e2dd52-bf69-4e72-ba5f-4263a4acbbe0",
+      "name": "Verifier si CV est dans l'email"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.from.value[0].address }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "=Salut  {{ $json.from.value[0].name }}, veuillez réenvoyez votre candidature votre email est surement sans CV ou vide ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -992,
+        -144
+      ],
+      "id": "0e393205-b439-4ff0-9006-c5d96d6b70bc",
+      "name": "Message de repostuler",
+      "webhookId": "7ab88587-4a35-400e-819c-93d28691f05d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -960,
+        64
+      ],
+      "id": "9faf3cb5-e2b5-4ecb-8ba8-c33f4efabdf2",
+      "name": "Extraire les infos du PDF",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1f15aab3-039b-40e6-a76d-3a88829ef0e4",
+              "leftValue": "={{ $json.poste_trouve }}",
+              "rightValue": "Ouvert",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -240,
+        48
+      ],
+      "id": "7cdbaeb2-7a94-4932-83d8-3a9ac8a1489c",
+      "name": "Verfier si le poste est disponible ?"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.email }}",
+        "subject": "Concernant vos candidature ",
+        "emailType": "text",
+        "message": "=Salut  {{ $('Edit Fields').item.json[\"nom du candidat\"] }}, désolé le poste est dejà pris ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        320
+      ],
+      "id": "33ad4de8-f093-4427-86c3-1d438bdaabee",
+      "name": "Email de poste dejà fermé",
+      "webhookId": "440b15f2-b75c-4e40-b327-c733479caea6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "55bb3e49-61ca-4464-8cb4-22509d4fedcd",
+              "leftValue": "={{ $json.est_doublon }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        32
+      ],
+      "id": "27e27aa7-ea9a-4ba2-bc07-03bd4a35ea36",
+      "name": "Si le candidat existe dans la base"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.email }}",
+        "subject": "={{ $('Separer objet et contenu dela sortie de l\\'agent').itemMatching(0).json.objet }}",
+        "emailType": "text",
+        "message": "={{ $('Separer objet et contenu dela sortie de l\\'agent').itemMatching(0).json.corps }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1312,
+        -64
+      ],
+      "id": "ab91ca69-17c8-44ac-9f60-4765fd47bade",
+      "name": "Email  de candidature reçu",
+      "webhookId": "a11734c9-6eef-4e26-a892-c144ce2e1728",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. On récupère le texte brut généré par l'IA\nconst fullText = $input.item.json.output[0].content[0].text;\n\n// 2. On sépare l'objet du reste du corps via le premier double saut de ligne\nconst parts = fullText.split('\\n\\n');\n\n// 3. Le premier élément est l'objet (on nettoie le préfixe \"Objet : \" s'il existe)\nlet emailSubject = parts[0].replace(/^Objet\\s*:\\s*/i, '').trim();\n\n// 4. Tout le reste est le corps du message (on regroupe s'il y avait d'autres doubles sauts de ligne)\nconst emailBody = parts.slice(1).join('\\n\\n').trim();\n\n// 5. On renvoie deux variables propres dans le JSON de sortie\nreturn {\n  objet: emailSubject,\n  corps: emailBody\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        32
+      ],
+      "id": "cf08a4c7-6e0b-4f25-8172-42c379435d05",
+      "name": "Separer objet et contenu dela sortie de l'agent"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json[\"Email du candidat\"] }}",
+        "subject": "A propos de votre candidature ",
+        "emailType": "text",
+        "message": "=Bonjour   {{ $('Verifier si CV est dans l\\'email').item.json.from.value[0].name }}, conernant votre candidature pour le poste {{ $('Verifier si CV est dans l\\'email').item.json.subject }} nous avons verifier que vous avez dejà postuler pour le meme poste",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -160
+      ],
+      "id": "4dee0f98-3bba-4289-8029-7cc15a6c3c5f",
+      "name": "Send a message",
+      "webhookId": "954527ec-59df-4044-997f-af0bd287943e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w",
+          "mode": "list",
+          "cachedResultName": "Recrutement",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "POSTE",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -560,
+        48
+      ],
+      "id": "bca2b9d2-f145-45e1-a0b6-e58c782cc00c",
+      "name": "ObtenIr les infos sur le poste",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Iu25ZCHlM5E8Yxe0",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w",
+          "mode": "list",
+          "cachedResultName": "Recrutement",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2007244343,
+          "mode": "list",
+          "cachedResultName": "Candidature",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit#gid=2007244343"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $('Edit Fields').item.json.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -80,
+        32
+      ],
+      "id": "b97fd247-413f-498f-9e57-ab6e4ec67d87",
+      "name": "Recherche du candidat dans la base",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Iu25ZCHlM5E8Yxe0",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w",
+          "mode": "list",
+          "cachedResultName": "Recrutement",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2007244343,
+          "mode": "list",
+          "cachedResultName": "Candidature",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit#gid=2007244343"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nom": "={{ $('Edit Fields').item.json[\"nom du candidat\"] }}",
+            "Email": "={{ $('Edit Fields').item.json.email }}",
+            "Poste": "={{ $('Code in JavaScript').item.json.Poste }}",
+            "Date ": "={{ $now.toFormat('dd/MM/yyyy') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nom",
+              "displayName": "Nom",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Poste",
+              "displayName": "Poste",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date ",
+              "displayName": "Date ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Statut ",
+              "displayName": "Statut ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1104,
+        16
+      ],
+      "id": "25d6acfc-a7c3-4753-9041-09ac3f3f9075",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Iu25ZCHlM5E8Yxe0",
+          "name": "Google Sheets OAuth2 API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tous les postes de la base\nconst postes = $input.all();\n\n// L'objet de l'email du candidat\nconst objetEmail = $('Edit Fields').item.json.Objet.toLowerCase();\n\n// On cherche quel poste est mentionné dans l'objet\nconst posteCorrespondant = postes.find(item => {\n  const nomPoste = item.json.Poste?.toLowerCase();\n  return nomPoste && objetEmail.includes(nomPoste);\n});\n\n// Si aucun poste trouvé → on retourne un item vide avec flag\nif (!posteCorrespondant) {\n  return [{ json: { poste_trouve: false } }];\n}\n\n// Si trouvé → on garde toutes les infos du poste + le flag\nreturn [{\n  json: {\n    ...posteCorrespondant.json,\n    poste_trouve: true\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        48
+      ],
+      "id": "accab000-5427-495d-bc39-6af857958c55",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = $json.Email;\n\nreturn [{\n  json: {\n    ...$json,\n    est_doublon: email !== undefined && email !== null && email !== ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        32
+      ],
+      "id": "8f15177e-1291-4eeb-bd80-e7cc2b400dd6",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "sendTo": "samsongonnaguian@gmail.com",
+        "subject": "⚠️ WF Cabinet RH — IA indisponible ",
+        "emailType": "text",
+        "message": "=  Nœud en erreur : Message a model (OpenAI) Erreur : {{ $json.error.message }} Heure : {{ $now.format('DD/MM/YYYY HH:mm') }}  Candidat concerné : - Nom : {{ $('Edit Fields').item.json[\"nom du candidat\"] }} - Email : {{ $('Edit Fields').item.json.email }} - Poste : {{ $('Code in JavaScript').item.json.Poste }}  ACTION : Traiter cette candidature manuellement.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        320
+      ],
+      "id": "3e94f8fd-e633-4b40-9259-dcb536761bb0",
+      "name": "ERROR",
+      "webhookId": "fca79c56-33f5-497b-bfab-acdecd499e14",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "samsongonnaguian@gmail.com",
+        "subject": "Subject: 🔴 URGENT — Candidat non enregistré ",
+        "emailType": "text",
+        "message": "={{ $('Edit Fields').item.json[\"nom du candidat\"] }} {{ $('Edit Fields').item.json.email }} Poste : {{ $('Code in JavaScript').item.json.Poste }} Date : {{ $now.format('DD/MM/YYYY HH:mm') }} ACTION REQUISE : Enregistrer manuellement",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1376,
+        336
+      ],
+      "id": "eb81f7ff-185c-40de-8add-14be9051eff9",
+      "name": "ERROR1",
+      "webhookId": "e4910112-cf87-449a-a4f7-4e64b4782e2d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verifier si CV est dans l'email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "ObtenIr les infos sur le poste",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifier si CV est dans l'email": {
+      "main": [
+        [
+          {
+            "node": "Message de repostuler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extraire les infos du PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire les infos du PDF": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verfier si le poste est disponible ?": {
+      "main": [
+        [
+          {
+            "node": "Recherche du candidat dans la base",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email de poste dejà fermé",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Si le candidat existe dans la base": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Separer objet et contenu dela sortie de l'agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERROR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email  de candidature reçu": {
+      "main": [
+        []
+      ]
+    },
+    "Separer objet et contenu dela sortie de l'agent": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ObtenIr les infos sur le poste": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recherche du candidat dans la base": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Verfier si le poste est disponible ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Email  de candidature reçu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERROR1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Si le candidat existe dans la base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a2ffb769-d6f7-4da8-a88c-5396355d7ef0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "31605c47dee165aba28607488867dc602ee0c71b111a24ff4c93bf858764abde"
+  },
+  "id": "a9NQsbPNwsSiEBHo",
+  "tags": []
+}
+RECAPTULATIF CANDIDATURE DE LA JOURNEE
+
+{
+  "name": "Recapitulatif de candidature du jour",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -368,
+        -64
+      ],
+      "id": "acd0e317-364d-4a5f-a045-ad45dd8993f7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst aujourd_hui = $now.toFormat('dd/MM/yyyy');\n\nconst candidaturesDuJour = items.filter(item => {\n  return item.json['Date ']?.trim() === aujourd_hui;\n});\n\nif (candidaturesDuJour.length === 0) {\n  return [{ json: { aucune_candidature: true } }];\n}\n\nreturn candidaturesDuJour;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -64
+      ],
+      "id": "fecbfe63-942e-4851-a678-06624fed4c4d",
+      "name": "Filtrer candidature du jour"
+    },
+    {
+      "parameters": {
+        "jsCode": "const candidature = $('Filtrer candidature du jour').item.json;\nconst recruteur = $input.item.json;\nconst aujourd_hui = $now.toFormat('dd/MM/yyyy');\n\n// Remonter à toutes les candidatures pour compter celles du jour sur ce poste\nconst toutesLesCandidatures = $('Retrouver toutes les candidatures').all();\n\nconst candidaturesDuJourSurCePoste = toutesLesCandidatures.filter(item => {\n  const dateItem = item.json['Date ']?.trim();\n  const posteItem = item.json['Poste']?.trim().toLowerCase();\n  return dateItem === aujourd_hui && posteItem === candidature.Poste?.toLowerCase();\n});\n\nconst liste = candidaturesDuJourSurCePoste.map(c =>\n  `- ${c.json['Nom']} (${c.json['Email']})`\n).join('\\n');\n\nreturn [{\n  json: {\n    poste: candidature.Poste,\n    email_recruteur: recruteur['Email du recruteur '],\n    nombre: candidaturesDuJourSurCePoste.length,\n    liste_candidats: liste\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -64
+      ],
+      "id": "b6e0d72e-0a1a-4c19-8a1e-88e8ad2e2690",
+      "name": "Grouper par poste"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email_recruteur }}",
+        "subject": "=Bonjour,  Voici les candidatures reçues aujourd'hui  pour le poste : {{ $json.poste }}",
+        "emailType": "text",
+        "message": "=  Nombre de candidats : {{ $json.nombre }}  {{ $json.liste_candidats }}  Connectez-vous à la base pour consulter les CVs.  — RECRUTOS",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        -64
+      ],
+      "id": "4e0d1fdb-5269-4d3d-9228-6255b20d89ca",
+      "name": "Send a message",
+      "webhookId": "de193c4d-0a44-4a5f-ac9b-fff3762f2d89",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "sDuKsDYnyNHtdjRl",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w",
+          "mode": "list",
+          "cachedResultName": "Recrutement",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2007244343,
+          "mode": "list",
+          "cachedResultName": "Candidature",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit#gid=2007244343"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -160,
+        -64
+      ],
+      "id": "7d252288-174f-4cb9-9e12-36578232b14d",
+      "name": "Retrouver toutes les candidatures",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Iu25ZCHlM5E8Yxe0",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w",
+          "mode": "list",
+          "cachedResultName": "Recrutement",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "POSTE",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Poste",
+              "lookupValue": "={{ $json.Poste }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "1b3f0126-9325-4cc0-88d9-ec7764bba0a6",
+      "name": "Recuperer les recruteurs",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Iu25ZCHlM5E8Yxe0",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Retrouver toutes les candidatures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrer candidature du jour": {
+      "main": [
+        [
+          {
+            "node": "Recuperer les recruteurs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grouper par poste": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrouver toutes les candidatures": {
+      "main": [
+        [
+          {
+            "node": "Filtrer candidature du jour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer les recruteurs": {
+      "main": [
+        [
+          {
+            "node": "Grouper par poste",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a2bbeed9-7607-4196-acb7-ade1b1c53421",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "31605c47dee165aba28607488867dc602ee0c71b111a24ff4c93bf858764abde"
+  },
+  "id": "h9XcaaOICcuYAkLI",
+  "tags": []
+}
+RAPPORT VISUEL 
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w",
+          "mode": "list",
+          "cachedResultName": "Recrutement",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "POSTE",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mx0BlYFvs3WxvrlUir_6-UwHdTE-RALEamq54ryoV4w/edit#gid=0"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        -16
+      ],
+      "id": "d079df8b-c1c6-4ee3-babd-b4e880fd7ca5",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "moYmlMWi3hCYMkGJ",
+          "name": "Google Sheets Trigger OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appzJz6GcBU3zYXtO",
+          "mode": "list",
+          "cachedResultName": "Recrutement RECRUTOS",
+          "cachedResultUrl": "https://airtable.com/appzJz6GcBU3zYXtO"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl2p4CJQbHWD6oGk",
+          "mode": "list",
+          "cachedResultName": "Postes",
+          "cachedResultUrl": "https://airtable.com/appzJz6GcBU3zYXtO/tbl2p4CJQbHWD6oGk"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Poste": "={{ $json.Poste }}",
+            "Compétences": "={{ $json[\"Compétences réquises\"] }}",
+            "Expériences": "={{ $json.Experiences }}",
+            "Statut": "={{ $json.Statut }}",
+            "Email recruteur": "={{ $json[\"Email du recruteur \"] }}",
+            "Date ouverture": "2026-05-30T20:39:22"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Poste",
+              "displayName": "Poste",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Compétences",
+              "displayName": "Compétences",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Expériences",
+              "displayName": "Expériences",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Statut",
+              "displayName": "Statut",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Ouvert",
+                  "value": "Ouvert"
+                },
+                {
+                  "name": "Fermé",
+                  "value": "Fermé"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email recruteur",
+              "displayName": "Email recruteur",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Date ouverture",
+              "displayName": "Date ouverture",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        -16
+      ],
+      "id": "18aff855-df46-4e5b-9e83-789360e1f31f",
+      "name": "Create a record",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "C2iGUUqpvjkMwkB5",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6fdca7a0-4fc6-4f94-80b2-2928ab7ddbba",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "31605c47dee165aba28607488867dc602ee0c71b111a24ff4c93bf858764abde"
+  },
+  "id": "NoMu9V6C16UEJ44R",
+  "tags": []
+}
+
+
+
+
+
+
